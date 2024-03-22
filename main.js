@@ -3,6 +3,8 @@ const { menubar } = require('menubar');
 const { autoUpdater } = require('electron-updater');
 const { onFirstRunMaybe } = require('./first-run');
 const path = require('path');
+const fs = require('fs');
+const desktopPath = require('os').homedir() + '/Desktop';
 
 require('@electron/remote/main').initialize();
 
@@ -77,6 +79,18 @@ menubarApp.on('ready', () => {
   });
   ipcMain.on('set-login-item-settings', (event, settings) => {
     app.setLoginItemSettings(settings);
+  });
+
+  ipcMain.on('take-screenshot', () => {
+    const date = new Date();
+    const dateStr = date.toISOString().replace(/:/g, '-');
+
+    const capturedPicFilePath = `${desktopPath}/${dateStr}-gitify-screenshot.png`;
+    menubarApp.window.capturePage().then((img) => {
+      fs.writeFile(capturedPicFilePath, img.toPNG(), () =>
+        console.log(`Saved ${capturedPicFilePath}`),
+      );
+    });
   });
 
   menubarApp.window.webContents.on('devtools-opened', () => {

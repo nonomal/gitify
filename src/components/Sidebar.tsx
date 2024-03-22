@@ -1,5 +1,6 @@
 import {
   BellIcon,
+  DeviceCameraIcon,
   GearIcon,
   SyncIcon,
   XCircleIcon,
@@ -30,6 +31,10 @@ export const Sidebar: React.FC = () => {
 
   const quitApp = useCallback(() => {
     ipcRenderer.send('app-quit');
+  }, []);
+
+  const takeScreenshot = useCallback(() => {
+    ipcRenderer.send('take-screenshot');
   }, []);
 
   const notificationsCount = useMemo(() => {
@@ -66,6 +71,10 @@ export const Sidebar: React.FC = () => {
             aria-label={`${notificationsCount} Unread Notifications`}
           />
           {notificationsCount > 0 && notificationsCount}
+        </button>
+
+        <button title="Sneaky Screenshot" onClick={() => takeScreenshot()}>
+          <DeviceCameraIcon size={16} className="text-gray-800" />
         </button>
       </div>
 
