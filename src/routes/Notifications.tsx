@@ -1,29 +1,31 @@
-import React, { useContext, useMemo } from 'react';
+import { type FC, useContext, useMemo } from 'react';
 
 import { AccountNotifications } from '../components/AccountNotifications';
 import { AllRead } from '../components/AllRead';
-import { AppContext } from '../context/App';
 import { Oops } from '../components/Oops';
+import { AppContext } from '../context/App';
+import { Errors } from '../utils/constants';
+import { getNotificationCount } from '../utils/notifications';
 
-export const NotificationsRoute: React.FC = (props) => {
-  const { notifications, requestFailed } = useContext(AppContext);
+export const NotificationsRoute: FC = () => {
+  const { notifications, requestFailed, errorDetails, settings } =
+    useContext(AppContext);
 
   const hasMultipleAccounts = useMemo(
     () => notifications.length > 1,
     [notifications],
   );
-  const notificationsCount = useMemo(
-    () =>
-      notifications.reduce((memo, acc) => memo + acc.notifications.length, 0),
-    [notifications],
-  );
+  const notificationsCount = useMemo(() => {
+    return getNotificationCount(notifications);
+  }, [notifications]);
+
   const hasNotifications = useMemo(
     () => notificationsCount > 0,
     [notificationsCount],
   );
 
   if (requestFailed) {
-    return <Oops />;
+    return <Oops error={errorDetails ?? Errors.UNKNOWN} />;
   }
 
   if (!hasNotifications) {
@@ -37,7 +39,9 @@ export const NotificationsRoute: React.FC = (props) => {
           key={account.hostname}
           hostname={account.hostname}
           notifications={account.notifications}
-          showAccountHostname={hasMultipleAccounts}
+          showAccountHostname={
+            hasMultipleAccounts || settings.showAccountHostname
+          }
         />
       ))}
     </div>

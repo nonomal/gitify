@@ -2,7 +2,7 @@
 
 exports[`components/Sidebar.tsx should render itself & its children (logged in) 1`] = `
 <div
-  className="flex flex-col fixed left-14 w-14 -ml-14 h-full bg-gray-sidebar overflow-y-auto	"
+  className="flex flex-col fixed left-14 w-14 -ml-14 h-full bg-gray-sidebar overflow-y-auto"
 >
   <div
     className="flex flex-col flex-1 items-center py-4"
@@ -12,12 +12,13 @@ exports[`components/Sidebar.tsx should render itself & its children (logged in) 
       data-testid="gitify-logo"
       onClick={[Function]}
       title="Open Gitify on GitHub"
+      type="button"
     >
       <svg
         aria-label="Open Gitify"
         className=""
         onClick={[Function]}
-        role="logo"
+        role="img"
         viewBox="0 0 500 500"
         xmlns="http://www.w3.org/2000/svg"
         xmlnsXlink="http://www.w3.org/1999/xlink"
@@ -63,6 +64,7 @@ exports[`components/Sidebar.tsx should render itself & its children (logged in) 
       className="flex justify-around self-stretch items-center my-1 py-1 px-2 text-xs font-extrabold cursor-pointer text-green-500"
       onClick={[Function]}
       title="4 Unread Notifications"
+      type="button"
     >
       <svg
         aria-label="4 Unread Notifications"
@@ -88,15 +90,42 @@ exports[`components/Sidebar.tsx should render itself & its children (logged in) 
       </svg>
       4
     </button>
+    <button
+      onClick={[Function]}
+      title="Sneaky Screenshot"
+    >
+      <svg
+        aria-hidden="true"
+        className="text-gray-800"
+        fill="currentColor"
+        focusable="false"
+        height={16}
+        style={
+          {
+            "display": "inline-block",
+            "overflow": "visible",
+            "userSelect": "none",
+            "verticalAlign": "text-bottom",
+          }
+        }
+        viewBox="0 0 16 16"
+        width={16}
+      >
+        <path
+          d="M15 3c.55 0 1 .45 1 1v9c0 .55-.45 1-1 1H1c-.55 0-1-.45-1-1V4c0-.55.45-1 1-1 0-.55.45-1 1-1h4c.55 0 1 .45 1 1Zm-4.5 9c1.94 0 3.5-1.56 3.5-3.5S12.44 5 10.5 5 7 6.56 7 8.5 8.56 12 10.5 12ZM13 8.5c0 1.38-1.13 2.5-2.5 2.5S8 9.87 8 8.5 9.13 6 10.5 6 13 7.13 13 8.5ZM6 5V4H2v1Z"
+        />
+      </svg>
+    </button>
   </div>
   <div
     className="py-4 px-3"
   >
     <button
       aria-label="Quit Gitify"
-      className="flex justify-evenly items-center bg-transparent border-0 w-full text-sm text-white my-1 py-2 cursor-pointer hover:text-gray-500 focus:outline-none"
+      className="flex justify-evenly items-center bg-transparent border-0 w-full text-sm text-white my-1 py-2 cursor-pointer hover:text-gray-500 focus:outline-none disabled:text-gray-500 disabled:cursor-default"
       onClick={[Function]}
       title="Quit Gitify"
+      type="button"
     >
       <svg
         aria-label="Quit Gitify"
@@ -127,7 +156,7 @@ exports[`components/Sidebar.tsx should render itself & its children (logged in) 
 
 exports[`components/Sidebar.tsx should render itself & its children (logged out) 1`] = `
 <div
-  className="flex flex-col fixed left-14 w-14 -ml-14 h-full bg-gray-sidebar overflow-y-auto	"
+  className="flex flex-col fixed left-14 w-14 -ml-14 h-full bg-gray-sidebar overflow-y-auto"
 >
   <div
     className="flex flex-col flex-1 items-center py-4"
@@ -137,12 +166,13 @@ exports[`components/Sidebar.tsx should render itself & its children (logged out)
       data-testid="gitify-logo"
       onClick={[Function]}
       title="Open Gitify on GitHub"
+      type="button"
     >
       <svg
         aria-label="Open Gitify"
         className=""
         onClick={[Function]}
-        role="logo"
+        role="img"
         viewBox="0 0 500 500"
         xmlns="http://www.w3.org/2000/svg"
         xmlnsXlink="http://www.w3.org/1999/xlink"
@@ -188,6 +218,7 @@ exports[`components/Sidebar.tsx should render itself & its children (logged out)
       className="flex justify-around self-stretch items-center my-1 py-1 px-2 text-xs font-extrabold cursor-pointer text-green-500"
       onClick={[Function]}
       title="4 Unread Notifications"
+      type="button"
     >
       <svg
         aria-label="4 Unread Notifications"
@@ -213,15 +244,42 @@ exports[`components/Sidebar.tsx should render itself & its children (logged out)
       </svg>
       4
     </button>
+    <button
+      onClick={[Function]}
+      title="Sneaky Screenshot"
+    >
+      <svg
+        aria-hidden="true"
+        className="text-gray-800"
+        fill="currentColor"
+        focusable="false"
+        height={16}
+        style={
+          {
+            "display": "inline-block",
+            "overflow": "visible",
+            "userSelect": "none",
+            "verticalAlign": "text-bottom",
+          }
+        }
+        viewBox="0 0 16 16"
+        width={16}
+      >
+        <path
+          d="M15 3c.55 0 1 .45 1 1v9c0 .55-.45 1-1 1H1c-.55 0-1-.45-1-1V4c0-.55.45-1 1-1 0-.55.45-1 1-1h4c.55 0 1 .45 1 1Zm-4.5 9c1.94 0 3.5-1.56 3.5-3.5S12.44 5 10.5 5 7 6.56 7 8.5 8.56 12 10.5 12ZM13 8.5c0 1.38-1.13 2.5-2.5 2.5S8 9.87 8 8.5 9.13 6 10.5 6 13 7.13 13 8.5ZM6 5V4H2v1Z"
+        />
+      </svg>
+    </button>
   </div>
   <div
     className="py-4 px-3"
   >
     <button
       aria-label="Quit Gitify"
-      className="flex justify-evenly items-center bg-transparent border-0 w-full text-sm text-white my-1 py-2 cursor-pointer hover:text-gray-500 focus:outline-none"
+      className="flex justify-evenly items-center bg-transparent border-0 w-full text-sm text-white my-1 py-2 cursor-pointer hover:text-gray-500 focus:outline-none disabled:text-gray-500 disabled:cursor-default"
       onClick={[Function]}
       title="Quit Gitify"
+      type="button"
     >
       <svg
         aria-label="Quit Gitify"

@@ -1,10 +1,11 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import nock from 'nock';
 
 import { mockAccounts, mockSettings } from '../__mocks__/mock-state';
-import { mockedUser } from '../__mocks__/mockedData';
-import { AuthState } from '../types';
+import { mockedNotificationUser, mockedUser } from '../__mocks__/mockedData';
+import type { AuthState } from '../types';
+import { Errors } from '../utils/constants';
 import { useNotifications } from './useNotifications';
 
 describe('hooks/useNotifications.ts', () => {
@@ -30,7 +31,7 @@ describe('hooks/useNotifications.ts', () => {
           .get('/notifications?participating=false')
           .reply(200, notifications);
 
-        const { result } = renderHook(() => useNotifications(false));
+        const { result } = renderHook(() => useNotifications());
 
         act(() => {
           result.current.fetchNotifications(mockAccounts, mockSettings);
@@ -48,30 +49,270 @@ describe('hooks/useNotifications.ts', () => {
         expect(result.current.notifications[1].hostname).toBe('github.com');
       });
 
-      it('should fetch notifications with failure - github.com & enterprise', async () => {
-        const message = 'Oops! Something went wrong.';
+      describe('should fetch notifications with failures - github.com & enterprise', () => {
+        it('network error', async () => {
+          const code = AxiosError.ERR_NETWORK;
 
-        nock('https://api.github.com/')
-          .get('/notifications?participating=false')
-          .reply(400, { message });
+          nock('https://api.github.com/')
+            .get('/notifications?participating=false')
+            .replyWithError({
+              code: code,
+            });
 
-        nock('https://github.gitify.io/api/v3/')
-          .get('/notifications?participating=false')
-          .reply(400, { message });
+          nock('https://github.gitify.io/api/v3/')
+            .get('/notifications?participating=false')
+            .replyWithError({
+              code: code,
+            });
 
-        const { result } = renderHook(() => useNotifications(false));
+          const { result } = renderHook(() => useNotifications());
 
-        act(() => {
-          result.current.fetchNotifications(mockAccounts, mockSettings);
+          act(() => {
+            result.current.fetchNotifications(mockAccounts, mockSettings);
+          });
+
+          await waitFor(() => {
+            expect(result.current.requestFailed).toBe(true);
+            expect(result.current.errorDetails).toBe(Errors.NETWORK);
+          });
         });
 
-        expect(result.current.isFetching).toBe(true);
+        describe('bad request errors', () => {
+          it('bad credentials', async () => {
+            const code = AxiosError.ERR_BAD_REQUEST;
+            const status = 401;
+            const message = 'Bad credentials';
 
-        await waitFor(() => {
-          expect(result.current.isFetching).toBe(false);
+            nock('https://api.github.com/')
+              .get('/notifications?participating=false')
+              .replyWithError({
+                code,
+                response: {
+                  status,
+                  data: {
+                    message,
+                  },
+                },
+              });
+
+            nock('https://github.gitify.io/api/v3/')
+              .get('/notifications?participating=false')
+              .replyWithError({
+                code,
+                response: {
+                  status,
+                  data: {
+                    message,
+                  },
+                },
+              });
+
+            const { result } = renderHook(() => useNotifications());
+
+            act(() => {
+              result.current.fetchNotifications(mockAccounts, mockSettings);
+            });
+
+            await waitFor(() => {
+              expect(result.current.requestFailed).toBe(true);
+              expect(result.current.errorDetails).toBe(Errors.BAD_CREDENTIALS);
+            });
+          });
+
+          it('missing scopes', async () => {
+            const code = AxiosError.ERR_BAD_REQUEST;
+            const status = 403;
+            const message = "Missing the 'notifications' scope";
+
+            nock('https://api.github.com/')
+              .get('/notifications?participating=false')
+              .replyWithError({
+                code,
+                response: {
+                  status,
+                  data: {
+                    message,
+                  },
+                },
+              });
+
+            nock('https://github.gitify.io/api/v3/')
+              .get('/notifications?participating=false')
+              .replyWithError({
+                code,
+                response: {
+                  status,
+                  data: {
+                    message,
+                  },
+                },
+              });
+
+            const { result } = renderHook(() => useNotifications());
+
+            act(() => {
+              result.current.fetchNotifications(mockAccounts, mockSettings);
+            });
+
+            await waitFor(() => {
+              expect(result.current.requestFailed).toBe(true);
+              expect(result.current.errorDetails).toBe(Errors.MISSING_SCOPES);
+            });
+          });
+
+          it('rate limited - primary', async () => {
+            const code = AxiosError.ERR_BAD_REQUEST;
+            const status = 403;
+            const message = 'API rate limit exceeded';
+
+            nock('https://api.github.com/')
+              .get('/notifications?participating=false')
+              .replyWithError({
+                code,
+                response: {
+                  status,
+                  data: {
+                    message,
+                  },
+                },
+              });
+
+            nock('https://github.gitify.io/api/v3/')
+              .get('/notifications?participating=false')
+              .replyWithError({
+                code,
+                response: {
+                  status,
+                  data: {
+                    message,
+                  },
+                },
+              });
+
+            const { result } = renderHook(() => useNotifications());
+
+            act(() => {
+              result.current.fetchNotifications(mockAccounts, mockSettings);
+            });
+
+            await waitFor(() => {
+              expect(result.current.requestFailed).toBe(true);
+              expect(result.current.errorDetails).toBe(Errors.RATE_LIMITED);
+            });
+          });
+
+          it('rate limited - secondary', async () => {
+            const code = AxiosError.ERR_BAD_REQUEST;
+            const status = 403;
+            const message = 'You have exceeded a secondary rate limit';
+
+            nock('https://api.github.com/')
+              .get('/notifications?participating=false')
+              .replyWithError({
+                code,
+                response: {
+                  status,
+                  data: {
+                    message,
+                  },
+                },
+              });
+
+            nock('https://github.gitify.io/api/v3/')
+              .get('/notifications?participating=false')
+              .replyWithError({
+                code,
+                response: {
+                  status,
+                  data: {
+                    message,
+                  },
+                },
+              });
+
+            const { result } = renderHook(() => useNotifications());
+
+            act(() => {
+              result.current.fetchNotifications(mockAccounts, mockSettings);
+            });
+
+            await waitFor(() => {
+              expect(result.current.requestFailed).toBe(true);
+              expect(result.current.errorDetails).toBe(Errors.RATE_LIMITED);
+            });
+          });
+
+          it('unhandled bad request error', async () => {
+            const code = AxiosError.ERR_BAD_REQUEST;
+            const status = 400;
+            const message = 'Oops! Something went wrong.';
+
+            nock('https://api.github.com/')
+              .get('/notifications?participating=false')
+              .replyWithError({
+                code,
+                response: {
+                  status,
+                  data: {
+                    message,
+                  },
+                },
+              });
+
+            nock('https://github.gitify.io/api/v3/')
+              .get('/notifications?participating=false')
+              .replyWithError({
+                code,
+                response: {
+                  status,
+                  data: {
+                    message,
+                  },
+                },
+              });
+
+            const { result } = renderHook(() => useNotifications());
+
+            act(() => {
+              result.current.fetchNotifications(mockAccounts, mockSettings);
+            });
+
+            expect(result.current.isFetching).toBe(true);
+
+            await waitFor(() => {
+              expect(result.current.isFetching).toBe(false);
+            });
+
+            expect(result.current.requestFailed).toBe(true);
+          });
         });
 
-        expect(result.current.requestFailed).toBe(true);
+        it('unknown error', async () => {
+          const code = 'anything';
+
+          nock('https://api.github.com/')
+            .get('/notifications?participating=false')
+            .replyWithError({
+              code: code,
+            });
+
+          nock('https://github.gitify.io/api/v3/')
+            .get('/notifications?participating=false')
+            .replyWithError({
+              code: code,
+            });
+
+          const { result } = renderHook(() => useNotifications());
+
+          act(() => {
+            result.current.fetchNotifications(mockAccounts, mockSettings);
+          });
+
+          await waitFor(() => {
+            expect(result.current.requestFailed).toBe(true);
+            expect(result.current.errorDetails).toBe(Errors.UNKNOWN);
+          });
+        });
       });
     });
 
@@ -91,7 +332,7 @@ describe('hooks/useNotifications.ts', () => {
           .get('/notifications?participating=false')
           .reply(200, notifications);
 
-        const { result } = renderHook(() => useNotifications(false));
+        const { result } = renderHook(() => useNotifications());
 
         act(() => {
           result.current.fetchNotifications(accounts, mockSettings);
@@ -116,7 +357,7 @@ describe('hooks/useNotifications.ts', () => {
           .get('/notifications?participating=false')
           .reply(400, { message: 'Oops! Something went wrong.' });
 
-        const { result } = renderHook(() => useNotifications(false));
+        const { result } = renderHook(() => useNotifications());
 
         act(() => {
           result.current.fetchNotifications(accounts, mockSettings);
@@ -145,7 +386,7 @@ describe('hooks/useNotifications.ts', () => {
           .get('/notifications?participating=false')
           .reply(200, notifications);
 
-        const { result } = renderHook(() => useNotifications(false));
+        const { result } = renderHook(() => useNotifications());
 
         act(() => {
           result.current.fetchNotifications(accounts, mockSettings);
@@ -158,24 +399,125 @@ describe('hooks/useNotifications.ts', () => {
         expect(result.current.notifications[0].notifications.length).toBe(2);
       });
 
-      it('should fetch notifications with failure - github.com only', async () => {
-        const accounts: AuthState = {
-          ...mockAccounts,
-          enterpriseAccounts: [],
-        };
+      describe('should fetch notifications with failures - github.com only', () => {
+        it('bad credentials', async () => {
+          const status = 401;
+          const message = 'Bad credentials';
+          const accounts: AuthState = {
+            ...mockAccounts,
+            enterpriseAccounts: [],
+          };
 
-        nock('https://api.github.com/')
-          .get('/notifications?participating=false')
-          .reply(400, { message: 'Oops! Something went wrong.' });
+          nock('https://api.github.com/')
+            .get('/notifications?participating=false')
+            .reply(status, { message });
 
-        const { result } = renderHook(() => useNotifications(false));
+          const { result } = renderHook(() => useNotifications());
 
-        act(() => {
-          result.current.fetchNotifications(accounts, mockSettings);
+          act(() => {
+            result.current.fetchNotifications(accounts, mockSettings);
+          });
+
+          await waitFor(() => {
+            expect(result.current.requestFailed).toBe(true);
+            expect(result.current.errorDetails).toBe(Errors.BAD_CREDENTIALS);
+          });
         });
 
-        await waitFor(() => {
-          expect(result.current.requestFailed).toBe(true);
+        it('missing scopes', async () => {
+          const status = 403;
+          const message = "Missing the 'notifications' scope";
+          const accounts: AuthState = {
+            ...mockAccounts,
+            enterpriseAccounts: [],
+          };
+
+          nock('https://api.github.com/')
+            .get('/notifications?participating=false')
+            .reply(status, { message });
+
+          const { result } = renderHook(() => useNotifications());
+
+          act(() => {
+            result.current.fetchNotifications(accounts, mockSettings);
+          });
+
+          await waitFor(() => {
+            expect(result.current.requestFailed).toBe(true);
+            expect(result.current.errorDetails).toBe(Errors.MISSING_SCOPES);
+          });
+        });
+
+        it('rate limited - primary', async () => {
+          const status = 403;
+          const message = 'API rate limit exceeded';
+          const accounts: AuthState = {
+            ...mockAccounts,
+            enterpriseAccounts: [],
+          };
+
+          nock('https://api.github.com/')
+            .get('/notifications?participating=false')
+            .reply(status, { message });
+
+          const { result } = renderHook(() => useNotifications());
+
+          act(() => {
+            result.current.fetchNotifications(accounts, mockSettings);
+          });
+
+          await waitFor(() => {
+            expect(result.current.requestFailed).toBe(true);
+            expect(result.current.errorDetails).toBe(Errors.RATE_LIMITED);
+          });
+        });
+
+        it('rate limited - secondary', async () => {
+          const status = 403;
+          const message = 'You have exceeded a secondary rate limit';
+          const accounts: AuthState = {
+            ...mockAccounts,
+            enterpriseAccounts: [],
+          };
+
+          nock('https://api.github.com/')
+            .get('/notifications?participating=false')
+            .reply(status, { message });
+
+          const { result } = renderHook(() => useNotifications());
+
+          act(() => {
+            result.current.fetchNotifications(accounts, mockSettings);
+          });
+
+          await waitFor(() => {
+            expect(result.current.requestFailed).toBe(true);
+            expect(result.current.errorDetails).toBe(Errors.RATE_LIMITED);
+          });
+        });
+
+        it('default error', async () => {
+          const status = 400;
+          const message = 'Oops! Something went wrong.';
+          const accounts: AuthState = {
+            ...mockAccounts,
+            enterpriseAccounts: [],
+          };
+
+          nock('https://api.github.com/')
+            .get('/notifications?participating=false')
+            .reply(status, { message });
+
+          const { result } = renderHook(() => useNotifications());
+
+          act(() => {
+            result.current.fetchNotifications(accounts, mockSettings);
+          });
+
+          await waitFor(() => {
+            expect(result.current.requestFailed).toBe(true);
+            expect(result.current.errorDetails).toBe(Errors.UNKNOWN);
+          });
         });
       });
     });
@@ -194,19 +536,20 @@ describe('hooks/useNotifications.ts', () => {
             subject: {
               title: 'This is a check suite workflow.',
               type: 'CheckSuite',
-              url: 'https://api.github.com/1',
+              url: null,
+              latest_comment_url: null,
             },
             repository: {
               full_name: 'some/repo',
             },
-            updated_at: '2024-02-26T00:00:00Z',
           },
           {
             id: 2,
             subject: {
               title: 'This is a Discussion.',
               type: 'Discussion',
-              url: 'https://api.github.com/2',
+              url: null,
+              latest_comment_url: null,
             },
             repository: {
               full_name: 'some/repo',
@@ -221,6 +564,9 @@ describe('hooks/useNotifications.ts', () => {
               url: 'https://api.github.com/3',
               latest_comment_url: 'https://api.github.com/3/comments',
             },
+            repository: {
+              full_name: 'some/repo',
+            },
           },
           {
             id: 4,
@@ -230,13 +576,20 @@ describe('hooks/useNotifications.ts', () => {
               url: 'https://api.github.com/4',
               latest_comment_url: 'https://api.github.com/4/comments',
             },
+            repository: {
+              full_name: 'some/repo',
+            },
           },
           {
             id: 5,
             subject: {
               title: 'This is an invitation.',
               type: 'RepositoryInvitation',
-              url: 'https://api.github.com/5',
+              url: null,
+              latest_comment_url: null,
+            },
+            repository: {
+              full_name: 'some/repo',
             },
           },
           {
@@ -244,7 +597,11 @@ describe('hooks/useNotifications.ts', () => {
             subject: {
               title: 'This is a workflow run.',
               type: 'WorkflowRun',
-              url: 'https://api.github.com/6',
+              url: null,
+              latest_comment_url: null,
+            },
+            repository: {
+              full_name: 'some/repo',
             },
           },
         ];
@@ -265,6 +622,13 @@ describe('hooks/useNotifications.ts', () => {
                     stateReason: null,
                     isAnswered: true,
                     url: 'https://github.com/manosim/notifications-test/discussions/612',
+                    author: {
+                      login: 'discussion-creator',
+                      url: 'https://github.com/discussion-creator',
+                      avatar_url:
+                        'https://avatars.githubusercontent.com/u/1?v=4',
+                      type: 'User',
+                    },
                     comments: {
                       nodes: [
                         {
@@ -272,6 +636,10 @@ describe('hooks/useNotifications.ts', () => {
                           createdAt: '2022-03-04T20:39:44Z',
                           author: {
                             login: 'comment-user',
+                            url: 'https://github.com/comment-user',
+                            avatar_url:
+                              'https://avatars.githubusercontent.com/u/1?v=4',
+                            type: 'User',
                           },
                           replies: {
                             nodes: [],
@@ -285,28 +653,29 @@ describe('hooks/useNotifications.ts', () => {
             },
           });
 
-        nock('https://api.github.com')
-          .get('/3')
-          .reply(200, { state: 'closed', merged: true });
-        nock('https://api.github.com')
-          .get('/3/comments')
-          .reply(200, { user: { login: 'some-user' } });
-        nock('https://api.github.com')
-          .get('/4')
-          .reply(200, { state: 'closed', merged: false });
-        nock('https://api.github.com')
-          .get('/4/comments')
-          .reply(200, { user: { login: 'some-user' } });
-        nock('https://api.github.com')
-          .get('/5')
-          .reply(200, { state: 'open', draft: false });
+        nock('https://api.github.com').get('/3').reply(200, {
+          state: 'closed',
+          merged: true,
+          user: mockedNotificationUser,
+        });
+        nock('https://api.github.com').get('/3/comments').reply(200, {
+          user: mockedNotificationUser,
+        });
+        nock('https://api.github.com').get('/4').reply(200, {
+          state: 'closed',
+          merged: false,
+          user: mockedNotificationUser,
+        });
+        nock('https://api.github.com').get('/4/comments').reply(200, {
+          user: mockedNotificationUser,
+        });
 
-        const { result } = renderHook(() => useNotifications(true));
+        const { result } = renderHook(() => useNotifications());
 
         act(() => {
           result.current.fetchNotifications(accounts, {
             ...mockSettings,
-            colors: true,
+            detailedNotifications: true,
           });
         });
 
@@ -317,6 +686,85 @@ describe('hooks/useNotifications.ts', () => {
         });
 
         expect(result.current.notifications[0].notifications.length).toBe(6);
+      });
+    });
+
+    describe('showBots', () => {
+      it('should hide bot notifications when set to false', async () => {
+        const accounts: AuthState = {
+          ...mockAccounts,
+          enterpriseAccounts: [],
+          user: mockedUser,
+        };
+
+        const notifications = [
+          {
+            id: 1,
+            subject: {
+              title: 'This is an Issue.',
+              type: 'Issue',
+              url: 'https://api.github.com/1',
+              latest_comment_url: null,
+            },
+            repository: {
+              full_name: 'some/repo',
+            },
+          },
+          {
+            id: 2,
+            subject: {
+              title: 'This is a Pull Request.',
+              type: 'PullRequest',
+              url: 'https://api.github.com/2',
+              latest_comment_url: null,
+            },
+            repository: {
+              full_name: 'some/repo',
+            },
+          },
+        ];
+
+        nock('https://api.github.com')
+          .get('/notifications?participating=false')
+          .reply(200, notifications);
+        nock('https://api.github.com')
+          .get('/1')
+          .reply(200, {
+            state: 'closed',
+            merged: true,
+            user: {
+              login: 'some-user',
+              type: 'User',
+            },
+          });
+        nock('https://api.github.com')
+          .get('/2')
+          .reply(200, {
+            state: 'closed',
+            merged: false,
+            user: {
+              login: 'some-bot',
+              type: 'Bot',
+            },
+          });
+
+        const { result } = renderHook(() => useNotifications());
+
+        act(() => {
+          result.current.fetchNotifications(accounts, {
+            ...mockSettings,
+            detailedNotifications: true,
+            showBots: false,
+          });
+        });
+
+        expect(result.current.isFetching).toBe(true);
+
+        await waitFor(() => {
+          expect(result.current.notifications[0].hostname).toBe('github.com');
+        });
+
+        expect(result.current.notifications[0].notifications.length).toBe(1);
       });
     });
   });
@@ -336,7 +784,7 @@ describe('hooks/useNotifications.ts', () => {
         .get('/notifications?participating=false')
         .reply(200, notifications);
 
-      const { result } = renderHook(() => useNotifications(false));
+      const { result } = renderHook(() => useNotifications());
 
       act(() => {
         result.current.fetchNotifications(mockAccounts, mockSettings);
@@ -357,7 +805,7 @@ describe('hooks/useNotifications.ts', () => {
     });
   });
 
-  describe('markNotification', () => {
+  describe('markNotificationRead', () => {
     const id = 'notification-123';
 
     describe('github.com', () => {
@@ -369,10 +817,10 @@ describe('hooks/useNotifications.ts', () => {
           .patch(`/notifications/threads/${id}`)
           .reply(200);
 
-        const { result } = renderHook(() => useNotifications(false));
+        const { result } = renderHook(() => useNotifications());
 
         act(() => {
-          result.current.markNotification(accounts, id, hostname);
+          result.current.markNotificationRead(accounts, id, hostname);
         });
 
         await waitFor(() => {
@@ -387,10 +835,10 @@ describe('hooks/useNotifications.ts', () => {
           .patch(`/notifications/threads/${id}`)
           .reply(400);
 
-        const { result } = renderHook(() => useNotifications(false));
+        const { result } = renderHook(() => useNotifications());
 
         act(() => {
-          result.current.markNotification(accounts, id, hostname);
+          result.current.markNotificationRead(accounts, id, hostname);
         });
 
         await waitFor(() => {
@@ -410,10 +858,10 @@ describe('hooks/useNotifications.ts', () => {
           .patch(`/notifications/threads/${id}`)
           .reply(200);
 
-        const { result } = renderHook(() => useNotifications(false));
+        const { result } = renderHook(() => useNotifications());
 
         act(() => {
-          result.current.markNotification(accounts, id, hostname);
+          result.current.markNotificationRead(accounts, id, hostname);
         });
 
         await waitFor(() => {
@@ -428,10 +876,10 @@ describe('hooks/useNotifications.ts', () => {
           .patch(`/notifications/threads/${id}`)
           .reply(400);
 
-        const { result } = renderHook(() => useNotifications(false));
+        const { result } = renderHook(() => useNotifications());
 
         act(() => {
-          result.current.markNotification(accounts, id, hostname);
+          result.current.markNotificationRead(accounts, id, hostname);
         });
 
         await waitFor(() => {
@@ -455,7 +903,7 @@ describe('hooks/useNotifications.ts', () => {
           .delete(`/notifications/threads/${id}`)
           .reply(200);
 
-        const { result } = renderHook(() => useNotifications(false));
+        const { result } = renderHook(() => useNotifications());
 
         act(() => {
           result.current.markNotificationDone(accounts, id, hostname);
@@ -473,7 +921,7 @@ describe('hooks/useNotifications.ts', () => {
           .delete(`/notifications/threads/${id}`)
           .reply(400);
 
-        const { result } = renderHook(() => useNotifications(false));
+        const { result } = renderHook(() => useNotifications());
 
         act(() => {
           result.current.markNotificationDone(accounts, id, hostname);
@@ -496,7 +944,7 @@ describe('hooks/useNotifications.ts', () => {
           .delete(`/notifications/threads/${id}`)
           .reply(200);
 
-        const { result } = renderHook(() => useNotifications(false));
+        const { result } = renderHook(() => useNotifications());
 
         act(() => {
           result.current.markNotificationDone(accounts, id, hostname);
@@ -514,7 +962,7 @@ describe('hooks/useNotifications.ts', () => {
           .delete(`/notifications/threads/${id}`)
           .reply(400);
 
-        const { result } = renderHook(() => useNotifications(false));
+        const { result } = renderHook(() => useNotifications());
 
         act(() => {
           result.current.markNotificationDone(accounts, id, hostname);
@@ -547,7 +995,7 @@ describe('hooks/useNotifications.ts', () => {
           .patch(`/notifications/threads/${id}`)
           .reply(200);
 
-        const { result } = renderHook(() => useNotifications(false));
+        const { result } = renderHook(() => useNotifications());
 
         act(() => {
           result.current.unsubscribeNotification(accounts, id, hostname);
@@ -571,7 +1019,7 @@ describe('hooks/useNotifications.ts', () => {
           .patch(`/notifications/threads/${id}`)
           .reply(400);
 
-        const { result } = renderHook(() => useNotifications(false));
+        const { result } = renderHook(() => useNotifications());
 
         act(() => {
           result.current.unsubscribeNotification(accounts, id, hostname);
@@ -600,7 +1048,7 @@ describe('hooks/useNotifications.ts', () => {
           .patch(`/notifications/threads/${id}`)
           .reply(200);
 
-        const { result } = renderHook(() => useNotifications(false));
+        const { result } = renderHook(() => useNotifications());
 
         act(() => {
           result.current.unsubscribeNotification(accounts, id, hostname);
@@ -624,7 +1072,7 @@ describe('hooks/useNotifications.ts', () => {
           .patch(`/notifications/threads/${id}`)
           .reply(400);
 
-        const { result } = renderHook(() => useNotifications(false));
+        const { result } = renderHook(() => useNotifications());
 
         act(() => {
           result.current.unsubscribeNotification(accounts, id, hostname);
@@ -651,7 +1099,7 @@ describe('hooks/useNotifications.ts', () => {
           .put(`/repos/${repoSlug}/notifications`)
           .reply(200);
 
-        const { result } = renderHook(() => useNotifications(false));
+        const { result } = renderHook(() => useNotifications());
 
         act(() => {
           result.current.markRepoNotifications(accounts, repoSlug, hostname);
@@ -669,7 +1117,7 @@ describe('hooks/useNotifications.ts', () => {
           .put(`/repos/${repoSlug}/notifications`)
           .reply(400);
 
-        const { result } = renderHook(() => useNotifications(false));
+        const { result } = renderHook(() => useNotifications());
 
         act(() => {
           result.current.markRepoNotifications(accounts, repoSlug, hostname);
@@ -692,7 +1140,7 @@ describe('hooks/useNotifications.ts', () => {
           .put(`/repos/${repoSlug}/notifications`)
           .reply(200);
 
-        const { result } = renderHook(() => useNotifications(false));
+        const { result } = renderHook(() => useNotifications());
 
         act(() => {
           result.current.markRepoNotifications(accounts, repoSlug, hostname);
@@ -710,7 +1158,7 @@ describe('hooks/useNotifications.ts', () => {
           .put(`/repos/${repoSlug}/notifications`)
           .reply(400);
 
-        const { result } = renderHook(() => useNotifications(false));
+        const { result } = renderHook(() => useNotifications());
 
         act(() => {
           result.current.markRepoNotifications(accounts, repoSlug, hostname);
@@ -738,7 +1186,7 @@ describe('hooks/useNotifications.ts', () => {
           .delete(`/notifications/threads/${id}`)
           .reply(200);
 
-        const { result } = renderHook(() => useNotifications(false));
+        const { result } = renderHook(() => useNotifications());
 
         act(() => {
           result.current.markRepoNotificationsDone(
@@ -760,7 +1208,7 @@ describe('hooks/useNotifications.ts', () => {
           .delete(`/notifications/threads/${id}`)
           .reply(400);
 
-        const { result } = renderHook(() => useNotifications(false));
+        const { result } = renderHook(() => useNotifications());
 
         act(() => {
           result.current.markRepoNotificationsDone(
@@ -787,7 +1235,7 @@ describe('hooks/useNotifications.ts', () => {
           .delete(`/notifications/threads/${id}`)
           .reply(200);
 
-        const { result } = renderHook(() => useNotifications(false));
+        const { result } = renderHook(() => useNotifications());
 
         act(() => {
           result.current.markRepoNotificationsDone(
@@ -809,7 +1257,7 @@ describe('hooks/useNotifications.ts', () => {
           .delete(`/notifications/threads/${id}`)
           .reply(400);
 
-        const { result } = renderHook(() => useNotifications(false));
+        const { result } = renderHook(() => useNotifications());
 
         act(() => {
           result.current.markRepoNotificationsDone(

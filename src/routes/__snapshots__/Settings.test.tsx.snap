@@ -1,8 +1,8 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`routes/Settings.tsx should not be able to enable colors due to missing scope 1`] = `
+exports[`routes/Settings.tsx Appearance section should not be able to enable detailed notifications due to missing scope 1`] = `
 <div
-  class="flex items-start mt-1 mb-3"
+  class="flex items-start"
 >
   <div
     class="flex items-center h-5"
@@ -10,35 +10,56 @@ exports[`routes/Settings.tsx should not be able to enable colors due to missing 
     <input
       class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
       disabled=""
-      id="colors"
+      id="detailedNotifications"
       type="checkbox"
     />
   </div>
   <div
-    class="ml-3 text-sm"
+    class="ml-3 "
   >
     <label
       class="font-medium text-gray-700 dark:text-gray-200"
-      for="colors"
+      for="detailedNotifications"
       style="text-decoration: line-through;"
     >
-      Use GitHub-like state colors (requires repo scope)
+      Detailed notifications (requires repo scope)
+      <span
+        aria-label="tooltip-detailedNotifications"
+        class="relative"
+        id="tooltip-detailedNotifications"
+      >
+        <svg
+          aria-hidden="true"
+          class="text-blue-500 ml-1"
+          fill="currentColor"
+          focusable="false"
+          height="16"
+          style="display: inline-block; user-select: none; vertical-align: text-bottom; overflow: visible;"
+          viewBox="0 0 16 16"
+          width="16"
+        >
+          <path
+            d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.92 6.085h.001a.749.749 0 1 1-1.342-.67c.169-.339.436-.701.849-.977C6.845 4.16 7.369 4 8 4a2.756 2.756 0 0 1 1.637.525c.503.377.863.965.863 1.725 0 .448-.115.83-.329 1.15-.205.307-.47.513-.692.662-.109.072-.22.138-.313.195l-.006.004a6.24 6.24 0 0 0-.26.16.952.952 0 0 0-.276.245.75.75 0 0 1-1.248-.832c.184-.264.42-.489.692-.661.103-.067.207-.132.313-.195l.007-.004c.1-.061.182-.11.258-.161a.969.969 0 0 0 .277-.245C8.96 6.514 9 6.427 9 6.25a.612.612 0 0 0-.262-.525A1.27 1.27 0 0 0 8 5.5c-.369 0-.595.09-.74.187a1.01 1.01 0 0 0-.34.398ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"
+          />
+        </svg>
+      </span>
     </label>
   </div>
 </div>
 `;
 
-exports[`routes/Settings.tsx should render itself & its children 1`] = `
+exports[`routes/Settings.tsx General should render itself & its children 1`] = `
 <div
-  class="flex flex-1 flex-col dark:bg-gray-dark dark:text-white"
+  class="flex flex-1 flex-col h-screen dark:bg-gray-dark dark:text-white"
   data-testid="settings"
 >
   <div
-    class="flex justify-between items-center mt-4 py-2 mx-8"
+    class="flex justify-between items-center mt-2 py-2 mx-8"
   >
     <button
       class="focus:outline-none"
       title="Go Back"
+      type="button"
     >
       <svg
         aria-label="Go Back"
@@ -63,233 +84,440 @@ exports[`routes/Settings.tsx should render itself & its children 1`] = `
     </h3>
   </div>
   <div
-    class="flex-1 px-8"
+    class="flex-grow overflow-x-auto px-8"
   >
     <fieldset
-      class="mb-1"
-      id="appearance"
+      class="mb-3"
     >
-      <div>
-        <legend
-          class="mb-1 text-base font-medium dark:text-white"
-        >
-          Appearance
-        </legend>
-      </div>
+      <legend
+        class="font-semibold mt-2 mb-1"
+        id="appearance"
+      >
+        Appearance
+      </legend>
       <div
-        aria-labelledby="appearance"
-        class="flex items-center space-x-4 py-2"
-        role="group"
+        class="mt-1 mb-3 text-sm"
       >
         <div
-          class="flex items-center mt-1"
+          class="flex items-start"
         >
-          <input
-            checked=""
-            class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"
-            id="appearance_system"
-            name="appearance"
-            type="radio"
-            value="SYSTEM"
-          />
-          <label
-            class="ml-3 block text-sm font-medium text-gray-700 dark:text-white"
-            for="appearance_system"
+          <div
+            class="mr-3 py-1"
           >
-            System
-          </label>
+            <label
+              class="font-medium text-gray-700 dark:text-gray-200 "
+              for="theme"
+            >
+              Theme:
+            </label>
+          </div>
+          <div
+            aria-labelledby="theme"
+            class="flex items-center space-x-4"
+            role="group"
+          >
+            <div
+              class="flex mt-1"
+            >
+              <input
+                checked=""
+                class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"
+                id="theme_system"
+                name="theme"
+                type="radio"
+                value="SYSTEM"
+              />
+              <label
+                class="ml-3 block text-sm font-medium text-gray-700 dark:text-white"
+                for="theme_system"
+              >
+                System
+              </label>
+            </div>
+            <div
+              class="flex mt-1"
+            >
+              <input
+                class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"
+                id="theme_light"
+                name="theme"
+                type="radio"
+                value="LIGHT"
+              />
+              <label
+                class="ml-3 block text-sm font-medium text-gray-700 dark:text-white"
+                for="theme_light"
+              >
+                Light
+              </label>
+            </div>
+            <div
+              class="flex mt-1"
+            >
+              <input
+                class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"
+                id="theme_dark"
+                name="theme"
+                type="radio"
+                value="DARK"
+              />
+              <label
+                class="ml-3 block text-sm font-medium text-gray-700 dark:text-white"
+                for="theme_dark"
+              >
+                Dark
+              </label>
+            </div>
+          </div>
         </div>
+      </div>
+      <div
+        class="mt-1 mb-3 text-sm"
+      >
         <div
-          class="flex items-center mt-1"
+          class="flex items-start"
         >
-          <input
-            class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"
-            id="appearance_light"
-            name="appearance"
-            type="radio"
-            value="LIGHT"
-          />
-          <label
-            class="ml-3 block text-sm font-medium text-gray-700 dark:text-white"
-            for="appearance_light"
+          <div
+            class="flex items-center h-5"
           >
-            Light
-          </label>
+            <input
+              class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
+              id="detailedNotifications"
+              type="checkbox"
+            />
+          </div>
+          <div
+            class="ml-3 "
+          >
+            <label
+              class="font-medium text-gray-700 dark:text-gray-200"
+              for="detailedNotifications"
+              style=""
+            >
+              Detailed notifications
+              <span
+                aria-label="tooltip-detailedNotifications"
+                class="relative"
+                id="tooltip-detailedNotifications"
+              >
+                <svg
+                  aria-hidden="true"
+                  class="text-blue-500 ml-1"
+                  fill="currentColor"
+                  focusable="false"
+                  height="16"
+                  style="display: inline-block; user-select: none; vertical-align: text-bottom; overflow: visible;"
+                  viewBox="0 0 16 16"
+                  width="16"
+                >
+                  <path
+                    d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.92 6.085h.001a.749.749 0 1 1-1.342-.67c.169-.339.436-.701.849-.977C6.845 4.16 7.369 4 8 4a2.756 2.756 0 0 1 1.637.525c.503.377.863.965.863 1.725 0 .448-.115.83-.329 1.15-.205.307-.47.513-.692.662-.109.072-.22.138-.313.195l-.006.004a6.24 6.24 0 0 0-.26.16.952.952 0 0 0-.276.245.75.75 0 0 1-1.248-.832c.184-.264.42-.489.692-.661.103-.067.207-.132.313-.195l.007-.004c.1-.061.182-.11.258-.161a.969.969 0 0 0 .277-.245C8.96 6.514 9 6.427 9 6.25a.612.612 0 0 0-.262-.525A1.27 1.27 0 0 0 8 5.5c-.369 0-.595.09-.74.187a1.01 1.01 0 0 0-.34.398ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"
+                  />
+                </svg>
+              </span>
+            </label>
+          </div>
         </div>
+      </div>
+      <div
+        class="mt-1 mb-3 text-sm"
+      >
         <div
-          class="flex items-center mt-1"
+          class="flex items-start"
         >
-          <input
-            class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"
-            id="appearance_dark"
-            name="appearance"
-            type="radio"
-            value="DARK"
-          />
-          <label
-            class="ml-3 block text-sm font-medium text-gray-700 dark:text-white"
-            for="appearance_dark"
+          <div
+            class="flex items-center h-5"
           >
-            Dark
-          </label>
+            <input
+              class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
+              id="showAccountHostname"
+              type="checkbox"
+            />
+          </div>
+          <div
+            class="ml-3 "
+          >
+            <label
+              class="font-medium text-gray-700 dark:text-gray-200"
+              for="showAccountHostname"
+            >
+              Show account hostname
+            </label>
+          </div>
         </div>
       </div>
     </fieldset>
-    <div
-      class="flex items-start mt-1 mb-3"
+    <fieldset
+      class="mb-3"
     >
-      <div
-        class="flex items-center h-5"
+      <legend
+        class="font-semibold mt-2 mb-1"
+        id="notifications"
       >
-        <input
-          class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
-          id="colors"
-          type="checkbox"
-        />
-      </div>
+        Notifications
+      </legend>
       <div
-        class="ml-3 text-sm"
+        class="mt-1 mb-3 text-sm"
       >
-        <label
-          class="font-medium text-gray-700 dark:text-gray-200"
-          for="colors"
-          style=""
+        <div
+          class="flex items-start"
         >
-          Use GitHub-like state colors
-        </label>
+          <div
+            class="flex items-center h-5"
+          >
+            <input
+              class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
+              id="showOnlyParticipating"
+              type="checkbox"
+            />
+          </div>
+          <div
+            class="ml-3 "
+          >
+            <label
+              class="font-medium text-gray-700 dark:text-gray-200"
+              for="showOnlyParticipating"
+            >
+              Show only participating
+              <span
+                aria-label="tooltip-showOnlyParticipating"
+                class="relative"
+                id="tooltip-showOnlyParticipating"
+              >
+                <svg
+                  aria-hidden="true"
+                  class="text-blue-500 ml-1"
+                  fill="currentColor"
+                  focusable="false"
+                  height="16"
+                  style="display: inline-block; user-select: none; vertical-align: text-bottom; overflow: visible;"
+                  viewBox="0 0 16 16"
+                  width="16"
+                >
+                  <path
+                    d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.92 6.085h.001a.749.749 0 1 1-1.342-.67c.169-.339.436-.701.849-.977C6.845 4.16 7.369 4 8 4a2.756 2.756 0 0 1 1.637.525c.503.377.863.965.863 1.725 0 .448-.115.83-.329 1.15-.205.307-.47.513-.692.662-.109.072-.22.138-.313.195l-.006.004a6.24 6.24 0 0 0-.26.16.952.952 0 0 0-.276.245.75.75 0 0 1-1.248-.832c.184-.264.42-.489.692-.661.103-.067.207-.132.313-.195l.007-.004c.1-.061.182-.11.258-.161a.969.969 0 0 0 .277-.245C8.96 6.514 9 6.427 9 6.25a.612.612 0 0 0-.262-.525A1.27 1.27 0 0 0 8 5.5c-.369 0-.595.09-.74.187a1.01 1.01 0 0 0-.34.398ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"
+                  />
+                </svg>
+              </span>
+            </label>
+          </div>
+        </div>
       </div>
-    </div>
-    <div
-      class="flex items-start mt-1 mb-3"
+      <div
+        class="mt-1 mb-3 text-sm"
+      >
+        <div
+          class="flex items-start"
+        >
+          <div
+            class="flex items-center h-5"
+          >
+            <input
+              checked=""
+              class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
+              disabled=""
+              id="showBots"
+              type="checkbox"
+            />
+          </div>
+          <div
+            class="ml-3 "
+          >
+            <label
+              class="font-medium text-gray-700 dark:text-gray-200"
+              for="showBots"
+              style="text-decoration: line-through;"
+            >
+              Show notifications from Bot accounts
+              <span
+                aria-label="tooltip-showBots"
+                class="relative"
+                id="tooltip-showBots"
+              >
+                <svg
+                  aria-hidden="true"
+                  class="text-blue-500 ml-1"
+                  fill="currentColor"
+                  focusable="false"
+                  height="16"
+                  style="display: inline-block; user-select: none; vertical-align: text-bottom; overflow: visible;"
+                  viewBox="0 0 16 16"
+                  width="16"
+                >
+                  <path
+                    d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.92 6.085h.001a.749.749 0 1 1-1.342-.67c.169-.339.436-.701.849-.977C6.845 4.16 7.369 4 8 4a2.756 2.756 0 0 1 1.637.525c.503.377.863.965.863 1.725 0 .448-.115.83-.329 1.15-.205.307-.47.513-.692.662-.109.072-.22.138-.313.195l-.006.004a6.24 6.24 0 0 0-.26.16.952.952 0 0 0-.276.245.75.75 0 0 1-1.248-.832c.184-.264.42-.489.692-.661.103-.067.207-.132.313-.195l.007-.004c.1-.061.182-.11.258-.161a.969.969 0 0 0 .277-.245C8.96 6.514 9 6.427 9 6.25a.612.612 0 0 0-.262-.525A1.27 1.27 0 0 0 8 5.5c-.369 0-.595.09-.74.187a1.01 1.01 0 0 0-.34.398ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"
+                  />
+                </svg>
+              </span>
+            </label>
+          </div>
+        </div>
+      </div>
+      <div
+        class="mt-1 mb-3 text-sm"
+      >
+        <div
+          class="flex items-start"
+        >
+          <div
+            class="flex items-center h-5"
+          >
+            <input
+              class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
+              id="markAsDoneOnOpen"
+              type="checkbox"
+            />
+          </div>
+          <div
+            class="ml-3 "
+          >
+            <label
+              class="font-medium text-gray-700 dark:text-gray-200"
+              for="markAsDoneOnOpen"
+            >
+              Mark as done on open
+            </label>
+          </div>
+        </div>
+      </div>
+    </fieldset>
+    <fieldset
+      class="mb-3"
     >
-      <div
-        class="flex items-center h-5"
+      <legend
+        class="font-semibold mt-2 mb-1"
+        id="system"
       >
-        <input
-          class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
-          id="showOnlyParticipating"
-          type="checkbox"
-        />
-      </div>
+        System
+      </legend>
       <div
-        class="ml-3 text-sm"
+        class="mt-1 mb-3 text-sm"
       >
-        <label
-          class="font-medium text-gray-700 dark:text-gray-200"
-          for="showOnlyParticipating"
+        <div
+          class="flex items-start"
         >
-          Show only participating
-        </label>
+          <div
+            class="flex items-center h-5"
+          >
+            <input
+              class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
+              id="showNotificationsCountInTray"
+              type="checkbox"
+            />
+          </div>
+          <div
+            class="ml-3 "
+          >
+            <label
+              class="font-medium text-gray-700 dark:text-gray-200"
+              for="showNotificationsCountInTray"
+            >
+              Show notifications count in tray
+            </label>
+          </div>
+        </div>
       </div>
-    </div>
-    <div
-      class="flex items-start mt-1 mb-3"
-    >
       <div
-        class="flex items-center h-5"
+        class="mt-1 mb-3 text-sm"
       >
-        <input
-          checked=""
-          class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
-          id="playSound"
-          type="checkbox"
-        />
-      </div>
-      <div
-        class="ml-3 text-sm"
-      >
-        <label
-          class="font-medium text-gray-700 dark:text-gray-200"
-          for="playSound"
+        <div
+          class="flex items-start"
         >
-          Play sound
-        </label>
+          <div
+            class="flex items-center h-5"
+          >
+            <input
+              checked=""
+              class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
+              id="showNotifications"
+              type="checkbox"
+            />
+          </div>
+          <div
+            class="ml-3 "
+          >
+            <label
+              class="font-medium text-gray-700 dark:text-gray-200"
+              for="showNotifications"
+            >
+              Show system notifications
+            </label>
+          </div>
+        </div>
       </div>
-    </div>
-    <div
-      class="flex items-start mt-1 mb-3"
-    >
       <div
-        class="flex items-center h-5"
+        class="mt-1 mb-3 text-sm"
       >
-        <input
-          checked=""
-          class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
-          id="showNotifications"
-          type="checkbox"
-        />
-      </div>
-      <div
-        class="ml-3 text-sm"
-      >
-        <label
-          class="font-medium text-gray-700 dark:text-gray-200"
-          for="showNotifications"
+        <div
+          class="flex items-start"
         >
-          Show notifications
-        </label>
+          <div
+            class="flex items-center h-5"
+          >
+            <input
+              checked=""
+              class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
+              id="playSound"
+              type="checkbox"
+            />
+          </div>
+          <div
+            class="ml-3 "
+          >
+            <label
+              class="font-medium text-gray-700 dark:text-gray-200"
+              for="playSound"
+            >
+              Play sound
+            </label>
+          </div>
+        </div>
       </div>
-    </div>
-    <div
-      class="flex items-start mt-1 mb-3"
-    >
       <div
-        class="flex items-center h-5"
+        class="mt-1 mb-3 text-sm"
       >
-        <input
-          class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
-          id="markAsDoneOnOpen"
-          type="checkbox"
-        />
-      </div>
-      <div
-        class="ml-3 text-sm"
-      >
-        <label
-          class="font-medium text-gray-700 dark:text-gray-200"
-          for="markAsDoneOnOpen"
+        <div
+          class="flex items-start"
         >
-          Mark as done on open
-        </label>
+          <div
+            class="flex items-center h-5"
+          >
+            <input
+              class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
+              id="openAtStartUp"
+              type="checkbox"
+            />
+          </div>
+          <div
+            class="ml-3 "
+          >
+            <label
+              class="font-medium text-gray-700 dark:text-gray-200"
+              for="openAtStartUp"
+            >
+              Open at startup
+            </label>
+          </div>
+        </div>
       </div>
-    </div>
-    <div
-      class="flex items-start mt-1 mb-3"
-    >
-      <div
-        class="flex items-center h-5"
-      >
-        <input
-          class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
-          id="openAtStartUp"
-          type="checkbox"
-        />
-      </div>
-      <div
-        class="ml-3 text-sm"
-      >
-        <label
-          class="font-medium text-gray-700 dark:text-gray-200"
-          for="openAtStartUp"
-        >
-          Open at startup
-        </label>
-      </div>
-    </div>
+    </fieldset>
   </div>
   <div
-    class="flex justify-between items-center bg-gray-200 dark:bg-gray-darker py-4 px-8"
+    class="flex justify-between items-center bg-gray-200 dark:bg-gray-darker py-1 px-8 text-sm"
   >
-    <small
-      class="font-semibold"
+    <button
+      class="font-semibold cursor-pointer"
+      title="View release notes"
+      type="button"
     >
       Gitify v
       0.0.1
-    </small>
+    </button>
     <div>
       <button
         class="hover:text-gray-500 py-1 px-2 my-1 mx-2 focus:outline-none"
         title="Login with GitHub Enterprise"
+        type="button"
       >
         <svg
           aria-label="Login with GitHub Enterprise"
@@ -309,10 +537,12 @@ exports[`routes/Settings.tsx should render itself & its children 1`] = `
       </button>
       <button
         class="hover:text-gray-500 py-1 px-2 my-1 mx-2 focus:outline-none"
-        title="Logout"
+        role="button"
+        title="Logout from octocat"
+        type="button"
       >
         <svg
-          aria-label="Logout"
+          aria-label="Logout from octocat"
           class="octicon octicon-sign-out"
           fill="currentColor"
           focusable="false"
@@ -330,6 +560,7 @@ exports[`routes/Settings.tsx should render itself & its children 1`] = `
       <button
         class="hover:text-gray-500 py-1 px-2 my-1 mx-2 focus:outline-none mr-0"
         title="Quit Gitify"
+        type="button"
       >
         <svg
           aria-label="Quit Gitify"
@@ -348,6 +579,102 @@ exports[`routes/Settings.tsx should render itself & its children 1`] = `
         </svg>
       </button>
     </div>
+  </div>
+</div>
+`;
+
+exports[`routes/Settings.tsx Notifications section should be able to toggle the showBots checkbox when detailedNotifications is enabled 1`] = `
+<div
+  class="flex items-start"
+>
+  <div
+    class="flex items-center h-5"
+  >
+    <input
+      checked=""
+      class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
+      id="showBots"
+      type="checkbox"
+    />
+  </div>
+  <div
+    class="ml-3 "
+  >
+    <label
+      class="font-medium text-gray-700 dark:text-gray-200"
+      for="showBots"
+    >
+      Show notifications from Bot accounts
+      <span
+        aria-label="tooltip-showBots"
+        class="relative"
+        id="tooltip-showBots"
+      >
+        <svg
+          aria-hidden="true"
+          class="text-blue-500 ml-1"
+          fill="currentColor"
+          focusable="false"
+          height="16"
+          style="display: inline-block; user-select: none; vertical-align: text-bottom; overflow: visible;"
+          viewBox="0 0 16 16"
+          width="16"
+        >
+          <path
+            d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.92 6.085h.001a.749.749 0 1 1-1.342-.67c.169-.339.436-.701.849-.977C6.845 4.16 7.369 4 8 4a2.756 2.756 0 0 1 1.637.525c.503.377.863.965.863 1.725 0 .448-.115.83-.329 1.15-.205.307-.47.513-.692.662-.109.072-.22.138-.313.195l-.006.004a6.24 6.24 0 0 0-.26.16.952.952 0 0 0-.276.245.75.75 0 0 1-1.248-.832c.184-.264.42-.489.692-.661.103-.067.207-.132.313-.195l.007-.004c.1-.061.182-.11.258-.161a.969.969 0 0 0 .277-.245C8.96 6.514 9 6.427 9 6.25a.612.612 0 0 0-.262-.525A1.27 1.27 0 0 0 8 5.5c-.369 0-.595.09-.74.187a1.01 1.01 0 0 0-.34.398ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"
+          />
+        </svg>
+      </span>
+    </label>
+  </div>
+</div>
+`;
+
+exports[`routes/Settings.tsx Notifications section should not be able to toggle the showBots checkbox when detailedNotifications is disabled 1`] = `
+<div
+  class="flex items-start"
+>
+  <div
+    class="flex items-center h-5"
+  >
+    <input
+      checked=""
+      class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
+      disabled=""
+      id="showBots"
+      type="checkbox"
+    />
+  </div>
+  <div
+    class="ml-3 "
+  >
+    <label
+      class="font-medium text-gray-700 dark:text-gray-200"
+      for="showBots"
+      style="text-decoration: line-through;"
+    >
+      Show notifications from Bot accounts
+      <span
+        aria-label="tooltip-showBots"
+        class="relative"
+        id="tooltip-showBots"
+      >
+        <svg
+          aria-hidden="true"
+          class="text-blue-500 ml-1"
+          fill="currentColor"
+          focusable="false"
+          height="16"
+          style="display: inline-block; user-select: none; vertical-align: text-bottom; overflow: visible;"
+          viewBox="0 0 16 16"
+          width="16"
+        >
+          <path
+            d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.92 6.085h.001a.749.749 0 1 1-1.342-.67c.169-.339.436-.701.849-.977C6.845 4.16 7.369 4 8 4a2.756 2.756 0 0 1 1.637.525c.503.377.863.965.863 1.725 0 .448-.115.83-.329 1.15-.205.307-.47.513-.692.662-.109.072-.22.138-.313.195l-.006.004a6.24 6.24 0 0 0-.26.16.952.952 0 0 0-.276.245.75.75 0 0 1-1.248-.832c.184-.264.42-.489.692-.661.103-.067.207-.132.313-.195l.007-.004c.1-.061.182-.11.258-.161a.969.969 0 0 0 .277-.245C8.96 6.514 9 6.427 9 6.25a.612.612 0 0 0-.262-.525A1.27 1.27 0 0 0 8 5.5c-.369 0-.595.09-.74.187a1.01 1.01 0 0 0-.34.398ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"
+          />
+        </svg>
+      </span>
+    </label>
   </div>
 </div>
 `;

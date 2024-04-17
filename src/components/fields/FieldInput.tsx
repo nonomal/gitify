@@ -1,19 +1,19 @@
-import React from 'react';
+import type { FC, ReactNode } from 'react';
 import { Field } from 'react-final-form';
 
-export interface IProps {
+export interface IFieldInput {
   name: string;
   type?: string;
   label: string;
   placeholder?: string;
-  helpText?: React.ReactNode | string;
+  helpText?: ReactNode | string;
   required?: boolean;
 }
 
-export const FieldInput: React.FC<IProps> = ({
+export const FieldInput: FC<IFieldInput> = ({
   label,
   name,
-  placeholder = '',
+  placeholder,
   helpText,
   type = 'text',
   required = false,
@@ -21,7 +21,7 @@ export const FieldInput: React.FC<IProps> = ({
   return (
     <Field name={name}>
       {({ input, meta: { touched, error } }) => (
-        <div className="mt-2">
+        <div className="mb-4">
           <label
             className="block tracking-wide text-grey-dark text-sm font-semibold mb-2"
             htmlFor={input.name}
@@ -31,7 +31,7 @@ export const FieldInput: React.FC<IProps> = ({
 
           <input
             type={type}
-            className="appearance-none block w-full dark:text-gray-800 bg-gray-100 border border-red rounded py-1.5 px-4 mb-2 focus:bg-gray-200 focus:outline-none"
+            className="appearance-none block w-full dark:text-gray-800 bg-gray-100 border border-red rounded py-1.5 px-4 mb-2 focus:bg-gray-200 focus:outline-none text-sm"
             id={input.name}
             placeholder={placeholder}
             required={required}

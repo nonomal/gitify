@@ -2,13 +2,16 @@ import axios from 'axios';
 import nock from 'nock';
 
 import { mockAccounts } from '../__mocks__/mock-state';
-import { mockedSingleNotification } from '../__mocks__/mockedData';
+import {
+  mockedNotificationUser,
+  mockedSingleNotification,
+} from '../__mocks__/mockedData';
+import type { SubjectType } from '../typesGithub';
 import {
   getCheckSuiteAttributes,
   getGitifySubjectDetails,
   getWorkflowRunAttributes,
 } from './subject';
-import { SubjectType } from '../typesGithub';
 describe('utils/subject.ts', () => {
   beforeEach(() => {
     // axios will default to using the XHR adapter which can't be intercepted
@@ -135,6 +138,65 @@ describe('utils/subject.ts', () => {
   });
 
   describe('getGitifySubjectDetails', () => {
+    describe('Commits', () => {
+      it('get commit commenter', async () => {
+        const mockNotification = {
+          ...mockedSingleNotification,
+          subject: {
+            title: 'This is a commit with comments',
+            url: 'https://api.github.com/repos/manosim/notifications-test/commits/d2a86d80e3d24ea9510d5de6c147e53c30f313a8',
+            latest_comment_url:
+              'https://api.github.com/repos/manosim/notifications-test/comments/141012658',
+            type: 'Commit' as SubjectType,
+          },
+        };
+
+        nock('https://api.github.com')
+          .get(
+            '/repos/manosim/notifications-test/commits/d2a86d80e3d24ea9510d5de6c147e53c30f313a8',
+          )
+          .reply(200, { author: { login: 'some-author' } });
+
+        nock('https://api.github.com')
+          .get('/repos/manosim/notifications-test/comments/141012658')
+          .reply(200, { user: { login: 'some-commenter' } });
+
+        const result = await getGitifySubjectDetails(
+          mockNotification,
+          mockAccounts.token,
+        );
+
+        expect(result.state).toBeNull();
+        expect(result.user).toEqual({ login: 'some-commenter' });
+      });
+
+      it('get commit without commenter', async () => {
+        const mockNotification = {
+          ...mockedSingleNotification,
+          subject: {
+            title: 'This is a commit with comments',
+            url: 'https://api.github.com/repos/manosim/notifications-test/commits/d2a86d80e3d24ea9510d5de6c147e53c30f313a8',
+            latest_comment_url: null,
+            type: 'Commit' as SubjectType,
+          },
+        };
+
+        nock('https://api.github.com')
+          .get(
+            '/repos/manosim/notifications-test/commits/d2a86d80e3d24ea9510d5de6c147e53c30f313a8',
+          )
+          .reply(200, { author: { login: 'some-author' } });
+
+        const result = await getGitifySubjectDetails(
+          mockNotification,
+          mockAccounts.token,
+        );
+
+        expect(result.state).toBeNull();
+        expect(result.user).toEqual({ login: 'some-author' });
+      });
+    });
+
     describe('Discussions', () => {
       it('answered discussion state', async () => {
         const mockNotification = {
@@ -157,6 +219,13 @@ describe('utils/subject.ts', () => {
                     viewerSubscription: 'SUBSCRIBED',
                     stateReason: null,
                     isAnswered: true,
+                    author: {
+                      login: 'discussion-creator',
+                      url: 'https://github.com/discussion-creator',
+                      avatar_url:
+                        'https://avatars.githubusercontent.com/u/583231?v=4',
+                      type: 'User',
+                    },
                     comments: {
                       nodes: [], //TODO - Update this to have real data
                     },
@@ -172,7 +241,12 @@ describe('utils/subject.ts', () => {
         );
 
         expect(result.state).toBe('ANSWERED');
-        expect(result.user).toBe(null);
+        expect(result.user).toEqual({
+          login: 'discussion-creator',
+          html_url: 'https://github.com/discussion-creator',
+          avatar_url: 'https://avatars.githubusercontent.com/u/583231?v=4',
+          type: 'User',
+        });
       });
 
       it('duplicate discussion state', async () => {
@@ -196,6 +270,13 @@ describe('utils/subject.ts', () => {
                     viewerSubscription: 'SUBSCRIBED',
                     stateReason: 'DUPLICATE',
                     isAnswered: false,
+                    author: {
+                      login: 'discussion-creator',
+                      url: 'https://github.com/discussion-creator',
+                      avatar_url:
+                        'https://avatars.githubusercontent.com/u/583231?v=4',
+                      type: 'User',
+                    },
                     comments: {
                       nodes: [], //TODO - Update this to have real data
                     },
@@ -211,7 +292,12 @@ describe('utils/subject.ts', () => {
         );
 
         expect(result.state).toBe('DUPLICATE');
-        expect(result.user).toBe(null);
+        expect(result.user).toEqual({
+          login: 'discussion-creator',
+          html_url: 'https://github.com/discussion-creator',
+          avatar_url: 'https://avatars.githubusercontent.com/u/583231?v=4',
+          type: 'User',
+        });
       });
 
       it('open discussion state', async () => {
@@ -235,6 +321,13 @@ describe('utils/subject.ts', () => {
                     viewerSubscription: 'SUBSCRIBED',
                     stateReason: null,
                     isAnswered: false,
+                    author: {
+                      login: 'discussion-creator',
+                      url: 'https://github.com/discussion-creator',
+                      avatar_url:
+                        'https://avatars.githubusercontent.com/u/583231?v=4',
+                      type: 'User',
+                    },
                     comments: {
                       nodes: [], //TODO - Update this to have real data
                     },
@@ -250,7 +343,12 @@ describe('utils/subject.ts', () => {
         );
 
         expect(result.state).toBe('OPEN');
-        expect(result.user).toBe(null);
+        expect(result.user).toEqual({
+          login: 'discussion-creator',
+          html_url: 'https://github.com/discussion-creator',
+          avatar_url: 'https://avatars.githubusercontent.com/u/583231?v=4',
+          type: 'User',
+        });
       });
 
       it('outdated discussion state', async () => {
@@ -274,6 +372,13 @@ describe('utils/subject.ts', () => {
                     viewerSubscription: 'SUBSCRIBED',
                     stateReason: 'OUTDATED',
                     isAnswered: false,
+                    author: {
+                      login: 'discussion-creator',
+                      url: 'https://github.com/discussion-creator',
+                      avatar_url:
+                        'https://avatars.githubusercontent.com/u/583231?v=4',
+                      type: 'User',
+                    },
                     comments: {
                       nodes: [], //TODO - Update this to have real data
                     },
@@ -289,7 +394,12 @@ describe('utils/subject.ts', () => {
         );
 
         expect(result.state).toBe('OUTDATED');
-        expect(result.user).toBe(null);
+        expect(result.user).toEqual({
+          login: 'discussion-creator',
+          html_url: 'https://github.com/discussion-creator',
+          avatar_url: 'https://avatars.githubusercontent.com/u/583231?v=4',
+          type: 'User',
+        });
       });
 
       it('reopened discussion state', async () => {
@@ -313,6 +423,13 @@ describe('utils/subject.ts', () => {
                     viewerSubscription: 'SUBSCRIBED',
                     stateReason: 'REOPENED',
                     isAnswered: false,
+                    author: {
+                      login: 'discussion-creator',
+                      url: 'https://github.com/discussion-creator',
+                      avatar_url:
+                        'https://avatars.githubusercontent.com/u/583231?v=4',
+                      type: 'User',
+                    },
                     comments: {
                       nodes: [], //TODO - Update this to have real data
                     },
@@ -328,7 +445,12 @@ describe('utils/subject.ts', () => {
         );
 
         expect(result.state).toBe('REOPENED');
-        expect(result.user).toBe(null);
+        expect(result.user).toEqual({
+          login: 'discussion-creator',
+          html_url: 'https://github.com/discussion-creator',
+          avatar_url: 'https://avatars.githubusercontent.com/u/583231?v=4',
+          type: 'User',
+        });
       });
 
       it('resolved discussion state', async () => {
@@ -352,6 +474,13 @@ describe('utils/subject.ts', () => {
                     viewerSubscription: 'SUBSCRIBED',
                     stateReason: 'RESOLVED',
                     isAnswered: false,
+                    author: {
+                      login: 'discussion-creator',
+                      url: 'https://github.com/discussion-creator',
+                      avatar_url:
+                        'https://avatars.githubusercontent.com/u/583231?v=4',
+                      type: 'User',
+                    },
                     comments: {
                       nodes: [], //TODO - Update this to have real data
                     },
@@ -367,7 +496,12 @@ describe('utils/subject.ts', () => {
         );
 
         expect(result.state).toBe('RESOLVED');
-        expect(result.user).toBe(null);
+        expect(result.user).toEqual({
+          login: 'discussion-creator',
+          html_url: 'https://github.com/discussion-creator',
+          avatar_url: 'https://avatars.githubusercontent.com/u/583231?v=4',
+          type: 'User',
+        });
       });
 
       it('filtered response by subscribed', async () => {
@@ -391,6 +525,13 @@ describe('utils/subject.ts', () => {
                     viewerSubscription: 'SUBSCRIBED',
                     stateReason: null,
                     isAnswered: false,
+                    author: {
+                      login: 'discussion-creator',
+                      url: 'https://github.com/discussion-creator',
+                      avatar_url:
+                        'https://avatars.githubusercontent.com/u/583231?v=4',
+                      type: 'User',
+                    },
                     comments: {
                       nodes: [], //TODO - Update this to have real data
                     },
@@ -400,6 +541,13 @@ describe('utils/subject.ts', () => {
                     viewerSubscription: 'IGNORED',
                     stateReason: null,
                     isAnswered: true,
+                    author: {
+                      login: 'discussion-creator',
+                      url: 'https://github.com/discussion-creator',
+                      avatar_url:
+                        'https://avatars.githubusercontent.com/u/583231?v=4',
+                      type: 'User',
+                    },
                     comments: {
                       nodes: [], //TODO - Update this to have real data
                     },
@@ -415,7 +563,12 @@ describe('utils/subject.ts', () => {
         );
 
         expect(result.state).toBe('OPEN');
-        expect(result.user).toBe(null);
+        expect(result.user).toEqual({
+          login: 'discussion-creator',
+          html_url: 'https://github.com/discussion-creator',
+          avatar_url: 'https://avatars.githubusercontent.com/u/583231?v=4',
+          type: 'User',
+        });
       });
     });
 
@@ -435,7 +588,7 @@ describe('utils/subject.ts', () => {
         );
 
         expect(result.state).toBe('open');
-        expect(result.user).toBe('some-commenter');
+        expect(result.user).toEqual({ login: 'some-commenter' });
       });
 
       it('closed issue state', async () => {
@@ -453,7 +606,7 @@ describe('utils/subject.ts', () => {
         );
 
         expect(result.state).toBe('closed');
-        expect(result.user).toBe('some-commenter');
+        expect(result.user).toEqual({ login: 'some-commenter' });
       });
 
       it('completed issue state', async () => {
@@ -475,7 +628,7 @@ describe('utils/subject.ts', () => {
         );
 
         expect(result.state).toBe('completed');
-        expect(result.user).toBe('some-commenter');
+        expect(result.user).toEqual({ login: 'some-commenter' });
       });
 
       it('not_planned issue state', async () => {
@@ -497,7 +650,7 @@ describe('utils/subject.ts', () => {
         );
 
         expect(result.state).toBe('not_planned');
-        expect(result.user).toBe('some-commenter');
+        expect(result.user).toEqual({ login: 'some-commenter' });
       });
 
       it('reopened issue state', async () => {
@@ -519,7 +672,7 @@ describe('utils/subject.ts', () => {
         );
 
         expect(result.state).toBe('reopened');
-        expect(result.user).toBe('some-commenter');
+        expect(result.user).toEqual({ login: 'some-commenter' });
       });
 
       it('handle issues without latest_comment_url', async () => {
@@ -544,7 +697,7 @@ describe('utils/subject.ts', () => {
         );
 
         expect(result.state).toBe('open');
-        expect(result.user).toBe('some-user');
+        expect(result.user).toEqual({ login: 'some-user' });
       });
     });
 
@@ -577,7 +730,7 @@ describe('utils/subject.ts', () => {
         );
 
         expect(result.state).toBe('closed');
-        expect(result.user).toBe('some-commenter');
+        expect(result.user).toEqual({ login: 'some-commenter' });
       });
 
       it('draft pull request state', async () => {
@@ -600,7 +753,7 @@ describe('utils/subject.ts', () => {
         );
 
         expect(result.state).toBe('draft');
-        expect(result.user).toBe('some-commenter');
+        expect(result.user).toEqual({ login: 'some-commenter' });
       });
 
       it('merged pull request state', async () => {
@@ -623,7 +776,7 @@ describe('utils/subject.ts', () => {
         );
 
         expect(result.state).toBe('merged');
-        expect(result.user).toBe('some-commenter');
+        expect(result.user).toEqual({ login: 'some-commenter' });
       });
 
       it('open pull request state', async () => {
@@ -646,7 +799,7 @@ describe('utils/subject.ts', () => {
         );
 
         expect(result.state).toBe('open');
-        expect(result.user).toBe('some-commenter');
+        expect(result.user).toEqual({ login: 'some-commenter' });
       });
 
       it('handle pull request without latest_comment_url', async () => {
@@ -671,7 +824,7 @@ describe('utils/subject.ts', () => {
         );
 
         expect(result.state).toBe('open');
-        expect(result.user).toBe('some-user');
+        expect(result.user).toEqual({ login: 'some-user' });
       });
     });
   });
@@ -691,14 +844,19 @@ describe('utils/subject.ts', () => {
 
       nock('https://api.github.com')
         .get('/repos/manosim/notifications-test/releases/1')
-        .reply(200, { author: { login: 'some-user' } });
+        .reply(200, { author: mockedNotificationUser });
 
       const result = await getGitifySubjectDetails(
         mockNotification,
         mockAccounts.token,
       );
 
-      expect(result.user).toBe('some-user');
+      expect(result.user).toEqual({
+        login: 'octocat',
+        html_url: 'https://github.com/octocat',
+        avatar_url: 'https://avatars.githubusercontent.com/u/583231?v=4',
+        type: 'User',
+      });
     });
   });
 

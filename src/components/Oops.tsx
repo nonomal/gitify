@@ -1,14 +1,15 @@
-import * as React from 'react';
+import { type FC, useMemo } from 'react';
 
-import { Constants } from '../utils/constants';
+import type { GitifyError } from '../types';
 
-export const Oops = () => {
-  const emoji = React.useMemo(
-    () =>
-      Constants.ERROR_EMOJIS[
-        Math.floor(Math.random() * Constants.ERROR_EMOJIS.length)
-      ],
-    [],
+interface IProps {
+  error: GitifyError;
+}
+
+export const Oops: FC<IProps> = ({ error }) => {
+  const emoji = useMemo(
+    () => error.emojis[Math.floor(Math.random() * error.emojis.length)],
+    [error],
   );
 
   return (
@@ -16,9 +17,16 @@ export const Oops = () => {
       <h1 className="text-5xl mb-5">{emoji}</h1>
 
       <h2 className="font-semibold text-xl mb-2 text-semibold">
-        Something went wrong.
+        {error.title}
       </h2>
-      <div>Couldn&apos;t get your notifications.</div>
+      {error.descriptions.map((description, i) => {
+        return (
+          // biome-ignore lint/suspicious/noArrayIndexKey: using index for key to keep the error constants clean
+          <div className="text-center mb-2" key={`error_description_${i}`}>
+            {description}
+          </div>
+        );
+      })}
     </div>
   );
 };

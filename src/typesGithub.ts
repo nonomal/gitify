@@ -79,12 +79,74 @@ export interface Notification {
   repository: Repository;
   url: string;
   subscription_url: string;
+  hostname: string; // This is not in the GitHub API, but we add it to the type to make it easier to work with
+}
+
+export type UserDetails = User & UserProfile;
+
+export interface UserProfile {
+  name: string;
+  company: string;
+  blog: string;
+  location: string;
+  email: string;
+  hireable: string;
+  bio: string;
+  twitter_username: string;
+  public_repos: number;
+  public_gists: number;
+  followers: number;
+  following: number;
+  created_at: string;
+  updated_at: string;
+  private_gists: number;
+  total_private_repos: number;
+  owned_private_repos: number;
+  disk_usage: number;
+  collaborators: number;
+  two_factor_authentication: boolean;
+  plan: Plan;
+}
+export interface Plan {
+  name: string;
+  space: number;
+  private_repos: number;
+  collaborators: number;
 }
 
 export interface User {
   login: string;
-  name: string;
   id: number;
+  node_id: string;
+  avatar_url: string;
+  gravatar_url: string;
+  url: string;
+  html_url: string;
+  followers_url: string;
+  following_url: string;
+  gists_url: string;
+  starred_url: string;
+  subscriptions_url: string;
+  organizations_url: string;
+  repos_url: string;
+  events_url: string;
+  received_events_url: string;
+  type: string;
+  site_admin: boolean;
+}
+
+export interface SubjectUser {
+  login: string;
+  html_url: string;
+  avatar_url: string;
+  type: string;
+}
+
+export interface DiscussionAuthor {
+  login: string;
+  url: string;
+  avatar_url: string;
+  type: string;
 }
 
 export interface Repository {
@@ -169,7 +231,7 @@ interface GitHubSubject {
 // This is not in the GitHub API, but we add it to the type to make it easier to work with
 export interface GitifySubject {
   state?: StateType;
-  user?: string;
+  user?: SubjectUser;
 }
 
 export interface PullRequest {
@@ -208,6 +270,76 @@ export interface PullRequest {
   additions: number;
   deletions: number;
   changed_files: number;
+}
+
+export interface Commit {
+  sha: string;
+  node_id: string;
+  commit: {
+    author: CommitUser;
+    committer: CommitUser;
+    message: string;
+    tree: {
+      sha: string;
+      url: string;
+    };
+    url: string;
+    comment_count: number;
+    verification: {
+      verified: boolean;
+      reason: string;
+      signature: string | null;
+      payload: string | null;
+    };
+  };
+  url: string;
+  html_url: string;
+  comments_url: string;
+  author: User;
+  committer: User;
+  parents: CommitParent[];
+  stats: {
+    total: number;
+    additions: number;
+    deletions: number;
+  };
+  files: CommitFiles[];
+}
+
+interface CommitUser {
+  name: string;
+  email: string;
+  date: string;
+}
+
+interface CommitParent {
+  sha: string;
+  url: string;
+  html_url: string;
+}
+
+interface CommitFiles {
+  sha: string;
+  filename: string;
+  status: string;
+  additions: number;
+  deletions: number;
+  changes: number;
+  blob_url: string;
+  raw_url: string;
+  contents_url: string;
+  patch: string;
+}
+export interface CommitComments {
+  url: string;
+  html_url: string;
+  issue_url: string;
+  id: number;
+  node_id: string;
+  user: User;
+  created_at: string;
+  updated_at: string;
+  body: string;
 }
 
 export interface Issue {
@@ -271,30 +403,27 @@ export interface GraphQLSearch<T> {
   };
 }
 
-export interface DiscussionSearchResultNode {
+export interface Discussion {
   viewerSubscription: ViewerSubscription;
   title: string;
   stateReason: DiscussionStateType;
   isAnswered: boolean;
   url: string;
-  comments: {
-    nodes: DiscussionCommentNode[];
-  };
+  author: DiscussionAuthor;
+  comments: DiscussionComments;
 }
 
-export interface DiscussionCommentNode {
-  databaseId: string | number;
-  createdAt: string;
-  author: { login: string };
-  replies: {
-    nodes: DiscussionSubcommentNode[];
-  };
+export interface DiscussionComments {
+  nodes: DiscussionComment[];
 }
 
-export interface DiscussionSubcommentNode {
+export interface DiscussionComment {
   databaseId: string | number;
   createdAt: string;
-  author: { login: string };
+  author: DiscussionAuthor;
+  replies?: {
+    nodes: DiscussionComment[];
+  };
 }
 
 export interface CheckSuiteAttributes {
@@ -309,4 +438,9 @@ export interface WorkflowRunAttributes {
   user: string;
   statusDisplayName: string;
   status: CheckSuiteStatus | null;
+}
+
+export interface GithubRESTError {
+  message: string;
+  documentation_url: string;
 }

@@ -2,9 +2,9 @@ const { ipcMain, app, nativeTheme } = require('electron');
 const { menubar } = require('menubar');
 const { autoUpdater } = require('electron-updater');
 const { onFirstRunMaybe } = require('./first-run');
-const path = require('path');
-const fs = require('fs');
-const desktopPath = require('os').homedir() + '/Desktop';
+const path = require('node:path');
+const fs = require('node:fs');
+const desktopPath = `${require('node:os').homedir()}/Desktop`;
 
 require('@electron/remote/main').initialize();
 
@@ -45,6 +45,11 @@ const menubarApp = menubar({
 });
 
 menubarApp.on('ready', () => {
+  // Force the window to retrieve its previous zoom factor
+  menubarApp.window.webContents.setZoomFactor(
+    menubarApp.window.webContents.getZoomFactor(),
+  );
+
   menubarApp.tray.setIgnoreDoubleClickEvents(true);
 
   autoUpdater.checkForUpdatesAndNotify();
@@ -75,6 +80,11 @@ menubarApp.on('ready', () => {
       } else {
         menubarApp.tray.setImage(iconIdle);
       }
+    }
+  });
+  ipcMain.on('update-title', (_, title) => {
+    if (!menubarApp.tray.isDestroyed()) {
+      menubarApp.tray.setTitle(title);
     }
   });
   ipcMain.on('set-login-item-settings', (event, settings) => {

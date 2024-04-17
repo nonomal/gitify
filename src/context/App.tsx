@@ -1,4 +1,5 @@
-import React, {
+import {
+  type ReactNode,
   createContext,
   useCallback,
   useEffect,
@@ -9,20 +10,22 @@ import React, {
 import { useInterval } from '../hooks/useInterval';
 import { useNotifications } from '../hooks/useNotifications';
 import {
-  AccountNotifications,
-  Appearance,
-  AuthOptions,
-  AuthState,
-  AuthTokenOptions,
-  SettingsState,
+  type AccountNotifications,
+  type AuthOptions,
+  type AuthState,
+  type AuthTokenOptions,
+  type GitifyError,
+  type SettingsState,
+  Theme,
 } from '../types';
 import { apiRequestAuth } from '../utils/api-requests';
-import { setAppearance } from '../utils/appearance';
 import { addAccount, authGitHub, getToken, getUserData } from '../utils/auth';
-import { setAutoLaunch } from '../utils/comms';
+import { setAutoLaunch, updateTrayTitle } from '../utils/comms';
 import Constants from '../utils/constants';
 import { generateGitHubAPIUrl } from '../utils/helpers';
+import { getNotificationCount } from '../utils/notifications';
 import { clearState, loadState, saveState } from '../utils/storage';
+import { setTheme } from '../utils/theme';
 
 const defaultAccounts: AuthState = {
   token: null,
@@ -34,10 +37,13 @@ export const defaultSettings: SettingsState = {
   participating: false,
   playSound: true,
   showNotifications: true,
+  showBots: true,
+  showNotificationsCountInTray: false,
   openAtStartup: false,
-  appearance: Appearance.SYSTEM,
-  colors: null,
+  theme: Theme.SYSTEM,
+  detailedNotifications: false,
   markAsDoneOnOpen: false,
+  showAccountHostname: false,
 };
 
 interface AppContextState {
@@ -51,58 +57,77 @@ interface AppContextState {
   notifications: AccountNotifications[];
   isFetching: boolean;
   requestFailed: boolean;
+  errorDetails: GitifyError;
   removeNotificationFromState: (id: string, hostname: string) => void;
   fetchNotifications: () => Promise<void>;
-  markNotification: (id: string, hostname: string) => Promise<void>;
+  markNotificationRead: (id: string, hostname: string) => Promise<void>;
   markNotificationDone: (id: string, hostname: string) => Promise<void>;
   unsubscribeNotification: (id: string, hostname: string) => Promise<void>;
   markRepoNotifications: (id: string, hostname: string) => Promise<void>;
   markRepoNotificationsDone: (id: string, hostname: string) => Promise<void>;
 
   settings: SettingsState;
-  updateSetting: (name: keyof SettingsState, value: any) => void;
+  updateSetting: (
+    name: keyof SettingsState,
+    value: boolean | Theme | string | null,
+  ) => void;
 }
 
 export const AppContext = createContext<Partial<AppContextState>>({});
 
-export const AppProvider = ({ children }: { children: React.ReactNode }) => {
+export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [accounts, setAccounts] = useState<AuthState>(defaultAccounts);
   const [settings, setSettings] = useState<SettingsState>(defaultSettings);
   const {
     fetchNotifications,
     notifications,
     requestFailed,
+    errorDetails,
     isFetching,
     removeNotificationFromState,
-    markNotification,
+    markNotificationRead,
     markNotificationDone,
     unsubscribeNotification,
     markRepoNotifications,
     markRepoNotificationsDone,
-  } = useNotifications(settings.colors);
+  } = useNotifications();
 
   useEffect(() => {
     restoreSettings();
   }, []);
 
   useEffect(() => {
-    setAppearance(settings.appearance as Appearance);
-  }, [settings.appearance]);
+    setTheme(settings.theme as Theme);
+  }, [settings.theme]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: We only want fetchNotifications to be called for certain account or setting changes.
   useEffect(() => {
     fetchNotifications(accounts, settings);
-  }, [settings.participating]);
-
-  useEffect(() => {
-    fetchNotifications(accounts, settings);
-  }, [accounts.token, accounts.enterpriseAccounts.length]);
+  }, [
+    settings.participating,
+    settings.showBots,
+    settings.detailedNotifications,
+    accounts.token,
+    accounts.enterpriseAccounts.length,
+  ]);
 
   useInterval(() => {
     fetchNotifications(accounts, settings);
-  }, 60000);
+  }, Constants.FETCH_INTERVAL);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: We need to update tray title when settings or notifications changes.
+  useEffect(() => {
+    const count = getNotificationCount(notifications);
+
+    if (settings.showNotificationsCountInTray && count > 0) {
+      updateTrayTitle(count.toString());
+    } else {
+      updateTrayTitle();
+    }
+  }, [settings.showNotificationsCountInTray, notifications]);
 
   const updateSetting = useCallback(
-    (name: keyof SettingsState, value: boolean | Appearance) => {
+    (name: keyof SettingsState, value: boolean | Theme) => {
       if (name === 'openAtStartup') {
         setAutoLaunch(value as boolean);
       }
@@ -177,9 +202,9 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     [accounts, settings, notifications],
   );
 
-  const markNotificationWithAccounts = useCallback(
+  const markNotificationReadWithAccounts = useCallback(
     async (id: string, hostname: string) =>
-      await markNotification(accounts, id, hostname),
+      await markNotificationRead(accounts, id, hostname),
     [accounts, notifications],
   );
 
@@ -220,9 +245,10 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         notifications,
         isFetching,
         requestFailed,
+        errorDetails,
         removeNotificationFromState,
         fetchNotifications: fetchNotificationsWithAccounts,
-        markNotification: markNotificationWithAccounts,
+        markNotificationRead: markNotificationReadWithAccounts,
         markNotificationDone: markNotificationDoneWithAccounts,
         unsubscribeNotification: unsubscribeNotificationWithAccounts,
         markRepoNotifications: markRepoNotificationsWithAccounts,

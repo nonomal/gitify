@@ -1,13 +1,16 @@
-import React, { useCallback, useContext, useState } from 'react';
-import { Form, FormRenderProps } from 'react-final-form';
 import { ArrowLeftIcon } from '@primer/octicons-react';
+
+import { type FC, useCallback, useContext, useState } from 'react';
+import { Form, type FormRenderProps } from 'react-final-form';
 import { useNavigate } from 'react-router-dom';
 
-import { AppContext } from '../context/App';
-import { AuthTokenOptions } from '../types';
-import { Constants } from '../utils/constants';
 import { FieldInput } from '../components/fields/FieldInput';
+import { AppContext } from '../context/App';
+import type { AuthTokenOptions } from '../types';
 import { openExternalLink } from '../utils/comms';
+import { Constants } from '../utils/constants';
+
+import { format } from 'date-fns';
 
 interface IValues {
   token?: string;
@@ -40,7 +43,7 @@ export const validate = (values: IValues): IFormErrors => {
   return errors;
 };
 
-export const LoginWithToken: React.FC = () => {
+export const LoginWithToken: FC = () => {
   const { validateToken } = useContext(AppContext);
   const navigate = useNavigate();
   const [isValidToken, setIsValidToken] = useState<boolean>(true);
@@ -52,6 +55,9 @@ export const LoginWithToken: React.FC = () => {
   const renderForm = (formProps: FormRenderProps) => {
     const { handleSubmit, submitting, pristine, values } = formProps;
 
+    const buttonClasses =
+      'rounded bg-gray-300 font-semibold rounded text-sm text-center hover:bg-gray-500 hover:text-white dark:text-black focus:outline-none cursor-pointer';
+
     return (
       <form onSubmit={handleSubmit}>
         <FieldInput
@@ -59,24 +65,21 @@ export const LoginWithToken: React.FC = () => {
           label="Token"
           placeholder="The 40 characters token generated on GitHub"
           helpText={
-            <>
-              To generate a token, go to GitHub,{' '}
-              <a
-                className="underline hover:text-gray-500 dark:hover:text-gray-300  cursor-pointer"
-                onClick={() =>
-                  openLink(
-                    'https://github.com/settings/tokens/new?scopes=notifications,read:user,repo&description=gitify_token',
-                  )
-                }
-              >
-                personal access tokens
-              </a>{' '}
-              and create one with the{' '}
-              <span className="underline font-extrabold text-yellow-500">
-                {Constants.AUTH_SCOPE.join(', ')}{' '}
-              </span>
-              scopes.
-            </>
+            <div>
+              <div>
+                <button
+                  type="button"
+                  className={`px-2 py-1 text-xs ${buttonClasses}`}
+                  onClick={() => openLink(getNewTokenURL())}
+                >
+                  Generate a PAT
+                </button>{' '}
+                on GitHub and paste above.
+              </div>
+              <div className="italic mt-1">
+                The required scopes will be selected for you.
+              </div>
+            </div>
           }
         />
 
@@ -84,7 +87,14 @@ export const LoginWithToken: React.FC = () => {
           name="hostname"
           label="Hostname"
           placeholder="github.company.com"
-          helpText="Defaults to github.com. Change only if you are using GitHub for Enterprise."
+          helpText={
+            <div>
+              <div>Defaults to github.com.</div>
+              <div className="italic mt-1">
+                Change only if you are using GitHub Enterprise Server.
+              </div>
+            </div>
+          }
         />
 
         {!isValidToken && (
@@ -94,7 +104,7 @@ export const LoginWithToken: React.FC = () => {
         )}
 
         <button
-          className="float-right px-4 py-2 my-4 bg-gray-300 font-semibold rounded text-sm text-center hover:bg-gray-500 hover:text-white dark:text-black focus:outline-none"
+          className={`float-right px-4 py-2 my-4 ${buttonClasses}`}
           title="Submit Button"
           disabled={submitting || pristine}
           type="submit"
@@ -119,6 +129,7 @@ export const LoginWithToken: React.FC = () => {
     <div className="flex-1 bg-white dark:bg-gray-dark dark:text-white">
       <div className="flex justify-between items-center mt-4 py-2 mx-8">
         <button
+          type="button"
           className="focus:outline-none"
           title="Go Back"
           onClick={() => navigate(-1)}
@@ -130,7 +141,9 @@ export const LoginWithToken: React.FC = () => {
           />
         </button>
 
-        <h3 className="text-lg font-semibold">Login with an access token</h3>
+        <h3 className="text-lg font-semibold">
+          Login with Personal Access Token
+        </h3>
       </div>
 
       <div className="flex-1 px-8">
@@ -148,3 +161,12 @@ export const LoginWithToken: React.FC = () => {
     </div>
   );
 };
+
+function getNewTokenURL(): string {
+  const date = format(new Date(), 'PP p');
+  const newTokenURL = new URL('https://github.com/settings/tokens/new');
+  newTokenURL.searchParams.append('description', `Gitify (Created on ${date})`);
+  newTokenURL.searchParams.append('scopes', Constants.AUTH_SCOPE.join(','));
+
+  return newTokenURL.toString();
+}

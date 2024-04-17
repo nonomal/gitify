@@ -1,5 +1,5 @@
-import { Appearance, AuthState, SettingsState } from '../types';
-import { mockedUser, mockedEnterpriseAccounts } from './mockedData';
+import { type AuthState, type SettingsState, Theme } from '../types';
+import { mockedEnterpriseAccounts, mockedUser } from './mockedData';
 
 export const mockAccounts: AuthState = {
   token: 'token-123-456',
@@ -11,8 +11,11 @@ export const mockSettings: SettingsState = {
   participating: false,
   playSound: true,
   showNotifications: true,
+  showBots: true,
+  showNotificationsCountInTray: false,
   openAtStartup: false,
-  appearance: Appearance.SYSTEM,
-  colors: false,
+  theme: Theme.SYSTEM,
+  detailedNotifications: false,
   markAsDoneOnOpen: false,
+  showAccountHostname: false,
 };

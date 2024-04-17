@@ -1,21 +1,27 @@
-import axios from 'axios';
-import { parse } from 'url';
+import axios, { AxiosError, type AxiosPromise } from 'axios';
 import { useCallback, useState } from 'react';
 
-import { AccountNotifications, AuthState, SettingsState } from '../types';
-import { Notification } from '../typesGithub';
+import type {
+  AccountNotifications,
+  AuthState,
+  GitifyError,
+  SettingsState,
+} from '../types';
+import type { GithubRESTError, Notification } from '../typesGithub';
 import { apiRequestAuth } from '../utils/api-requests';
+import Constants, { Errors } from '../utils/constants';
 import {
-  getEnterpriseAccountToken,
   generateGitHubAPIUrl,
+  getEnterpriseAccountToken,
+  getTokenForHost,
   isEnterpriseHost,
+  isGitHubLoggedIn,
 } from '../utils/helpers';
-import { removeNotification } from '../utils/remove-notification';
 import {
-  triggerNativeNotifications,
   setTrayIconColor,
+  triggerNativeNotifications,
 } from '../utils/notifications';
-import Constants from '../utils/constants';
+import { removeNotification } from '../utils/remove-notification';
 import { removeNotifications } from '../utils/remove-notifications';
 import { getGitifySubjectDetails } from '../utils/subject';
 
@@ -26,7 +32,7 @@ interface NotificationsState {
     accounts: AuthState,
     settings: SettingsState,
   ) => Promise<void>;
-  markNotification: (
+  markNotificationRead: (
     accounts: AuthState,
     id: string,
     hostname: string,
@@ -53,107 +59,129 @@ interface NotificationsState {
   ) => Promise<void>;
   isFetching: boolean;
   requestFailed: boolean;
+  errorDetails: GitifyError;
 }
 
-export const useNotifications = (colors: boolean): NotificationsState => {
+export const useNotifications = (): NotificationsState => {
   const [isFetching, setIsFetching] = useState(false);
   const [requestFailed, setRequestFailed] = useState(false);
+  const [errorDetails, setErrorDetails] = useState<GitifyError>();
+
   const [notifications, setNotifications] = useState<AccountNotifications[]>(
     [],
   );
 
   const fetchNotifications = useCallback(
-    async (accounts: AuthState, settings) => {
-      const isGitHubLoggedIn = accounts.token !== null;
-      const endpointSuffix = `notifications?participating=${settings.participating}`;
+    async (accounts: AuthState, settings: SettingsState) => {
+      function getNotifications(hostname: string, token: string): AxiosPromise {
+        const endpointSuffix = `notifications?participating=${settings.participating}`;
+        const url = `${generateGitHubAPIUrl(hostname)}${endpointSuffix}`;
+        return apiRequestAuth(url, 'GET', token);
+      }
 
       function getGitHubNotifications() {
-        if (!isGitHubLoggedIn) {
+        if (!isGitHubLoggedIn(accounts)) {
           return;
         }
-        const url = `${generateGitHubAPIUrl(
+        return getNotifications(
           Constants.DEFAULT_AUTH_OPTIONS.hostname,
-        )}${endpointSuffix}`;
-        return apiRequestAuth(url, 'GET', accounts.token);
+          accounts.token,
+        );
       }
 
       function getEnterpriseNotifications() {
         return accounts.enterpriseAccounts.map((account) => {
-          const url = `${generateGitHubAPIUrl(
-            account.hostname,
-          )}${endpointSuffix}`;
-          return apiRequestAuth(url, 'GET', account.token);
+          return getNotifications(account.hostname, account.token);
         });
       }
 
       setIsFetching(true);
-      setRequestFailed(false);
 
       return axios
         .all([getGitHubNotifications(), ...getEnterpriseNotifications()])
         .then(
           axios.spread((gitHubNotifications, ...entAccNotifications) => {
+            setRequestFailed(false);
             const enterpriseNotifications = entAccNotifications.map(
               (accountNotifications) => {
-                const { hostname } = parse(accountNotifications.config.url);
+                const { hostname } = new URL(accountNotifications.config.url);
                 return {
                   hostname,
-                  notifications: accountNotifications.data,
+                  notifications: accountNotifications.data.map(
+                    (notification: Notification) => {
+                      return {
+                        ...notification,
+                        hostname: hostname,
+                      };
+                    },
+                  ),
                 };
               },
             );
-            const data = isGitHubLoggedIn
+
+            const data = isGitHubLoggedIn(accounts)
               ? [
                   ...enterpriseNotifications,
                   {
                     hostname: Constants.DEFAULT_AUTH_OPTIONS.hostname,
-                    notifications: gitHubNotifications.data,
+                    notifications: gitHubNotifications.data.map(
+                      (notification: Notification) => {
+                        return {
+                          ...notification,
+                          hostname: Constants.DEFAULT_AUTH_OPTIONS.hostname,
+                        };
+                      },
+                    ),
                   },
                 ]
               : [...enterpriseNotifications];
 
-            if (colors === false) {
-              setNotifications(data);
-              triggerNativeNotifications(
-                notifications,
-                data,
-                settings,
-                accounts,
-              );
-              setIsFetching(false);
-              return;
-            }
             axios
               .all(
                 data.map(async (accountNotifications) => {
                   return {
                     hostname: accountNotifications.hostname,
-                    notifications: await axios.all<Notification>(
-                      accountNotifications.notifications.map(
-                        async (notification: Notification) => {
-                          const isEnterprise = isEnterpriseHost(
-                            accountNotifications.hostname,
-                          );
-                          const token = isEnterprise
-                            ? getEnterpriseAccountToken(
-                                accountNotifications.hostname,
-                                accounts.enterpriseAccounts,
-                              )
-                            : accounts.token;
+                    notifications: await axios
+                      .all<Notification>(
+                        accountNotifications.notifications.map(
+                          async (notification: Notification) => {
+                            if (!settings.detailedNotifications) {
+                              return notification;
+                            }
 
-                          const additionalSubjectDetails =
-                            await getGitifySubjectDetails(notification, token);
+                            const token = getTokenForHost(
+                              notification.hostname,
+                              accounts,
+                            );
 
-                          return {
-                            ...notification,
-                            subject: {
-                              ...notification.subject,
-                              ...additionalSubjectDetails,
-                            },
-                          };
-                        },
-                      ),
-                    ),
+                            const additionalSubjectDetails =
+                              await getGitifySubjectDetails(
+                                notification,
+                                token,
+                              );
+
+                            return {
+                              ...notification,
+                              subject: {
+                                ...notification.subject,
+                                ...additionalSubjectDetails,
+                              },
+                            };
+                          },
+                        ),
+                      )
+                      .then((notifications) => {
+                        return notifications.filter((notification) => {
+                          if (
+                            !settings.showBots &&
+                            notification.subject?.user?.type === 'Bot'
+                          ) {
+                            return false;
+                          }
+
+                          return true;
+                        });
+                      }),
                   };
                 }),
               )
@@ -169,16 +197,17 @@ export const useNotifications = (colors: boolean): NotificationsState => {
               });
           }),
         )
-        .catch(() => {
+        .catch((err: AxiosError<GithubRESTError>) => {
           setIsFetching(false);
           setRequestFailed(true);
+          setErrorDetails(determineFailureType(err));
         });
     },
     [notifications],
   );
 
-  const markNotification = useCallback(
-    async (accounts, id, hostname) => {
+  const markNotificationRead = useCallback(
+    async (accounts: AuthState, id: string, hostname: string) => {
       setIsFetching(true);
 
       const isEnterprise = isEnterpriseHost(hostname);
@@ -211,7 +240,7 @@ export const useNotifications = (colors: boolean): NotificationsState => {
   );
 
   const markNotificationDone = useCallback(
-    async (accounts, id, hostname) => {
+    async (accounts: AuthState, id: string, hostname: string) => {
       setIsFetching(true);
 
       const isEnterprise = isEnterpriseHost(hostname);
@@ -244,7 +273,7 @@ export const useNotifications = (colors: boolean): NotificationsState => {
   );
 
   const unsubscribeNotification = useCallback(
-    async (accounts, id, hostname) => {
+    async (accounts: AuthState, id: string, hostname: string) => {
       setIsFetching(true);
 
       const isEnterprise = isEnterpriseHost(hostname);
@@ -261,7 +290,7 @@ export const useNotifications = (colors: boolean): NotificationsState => {
           token,
           { ignored: true },
         );
-        await markNotification(accounts, id, hostname);
+        await markNotificationRead(accounts, id, hostname);
       } catch (err) {
         setIsFetching(false);
       }
@@ -270,7 +299,7 @@ export const useNotifications = (colors: boolean): NotificationsState => {
   );
 
   const markRepoNotifications = useCallback(
-    async (accounts, repoSlug, hostname) => {
+    async (accounts: AuthState, repoSlug: string, hostname: string) => {
       setIsFetching(true);
 
       const isEnterprise = isEnterpriseHost(hostname);
@@ -303,7 +332,7 @@ export const useNotifications = (colors: boolean): NotificationsState => {
   );
 
   const markRepoNotificationsDone = useCallback(
-    async (accounts, repoSlug, hostname) => {
+    async (accounts: AuthState, repoSlug: string, hostname: string) => {
       setIsFetching(true);
 
       try {
@@ -346,7 +375,7 @@ export const useNotifications = (colors: boolean): NotificationsState => {
   );
 
   const removeNotificationFromState = useCallback(
-    (id, hostname) => {
+    (id: string, hostname: string) => {
       const updatedNotifications = removeNotification(
         id,
         notifications,
@@ -362,14 +391,49 @@ export const useNotifications = (colors: boolean): NotificationsState => {
   return {
     isFetching,
     requestFailed,
+    errorDetails,
     notifications,
 
     removeNotificationFromState,
     fetchNotifications,
-    markNotification,
+    markNotificationRead,
     markNotificationDone,
     unsubscribeNotification,
     markRepoNotifications,
     markRepoNotificationsDone,
   };
 };
+
+function determineFailureType(err: AxiosError<GithubRESTError>): GitifyError {
+  const code = err.code;
+
+  if (code === AxiosError.ERR_NETWORK) {
+    return Errors.NETWORK;
+  }
+
+  if (code !== AxiosError.ERR_BAD_REQUEST) {
+    return Errors.UNKNOWN;
+  }
+
+  const status = err.response.status;
+  const message = err.response.data.message;
+
+  if (status === 401) {
+    return Errors.BAD_CREDENTIALS;
+  }
+
+  if (status === 403) {
+    if (message.includes("Missing the 'notifications' scope")) {
+      return Errors.MISSING_SCOPES;
+    }
+
+    if (
+      message.includes('API rate limit exceeded') ||
+      message.includes('You have exceeded a secondary rate limit')
+    ) {
+      return Errors.RATE_LIMITED;
+    }
+  }
+
+  return Errors.UNKNOWN;
+}

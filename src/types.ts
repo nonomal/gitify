@@ -1,22 +1,35 @@
-import { Notification, User } from './typesGithub';
+import type { Notification } from './typesGithub';
 
 export interface AuthState {
   token?: string;
   enterpriseAccounts: EnterpriseAccount[];
-  user: User | null;
+  user: GitifyUser | null;
 }
 
-export interface SettingsState {
+export type SettingsState = AppearanceSettingsState &
+  NotificationSettingsState &
+  SystemSettingsState;
+
+interface AppearanceSettingsState {
+  theme: Theme;
+  detailedNotifications: boolean;
+  showAccountHostname: boolean;
+}
+
+interface NotificationSettingsState {
   participating: boolean;
-  playSound: boolean;
   showNotifications: boolean;
-  openAtStartup: boolean;
-  appearance: Appearance;
-  colors: boolean | null;
+  showBots: boolean;
   markAsDoneOnOpen: boolean;
 }
 
-export enum Appearance {
+interface SystemSettingsState {
+  playSound: boolean;
+  openAtStartup: boolean;
+  showNotificationsCountInTray: boolean;
+}
+
+export enum Theme {
   SYSTEM = 'SYSTEM',
   LIGHT = 'LIGHT',
   DARK = 'DARK',
@@ -55,4 +68,28 @@ export interface AuthResponse {
 export interface AuthTokenResponse {
   hostname: string;
   token: string;
+}
+
+export interface GitifyUser {
+  login: string;
+  name: string;
+  id: number;
+}
+
+export interface GitifyError {
+  title: string;
+  descriptions: string[];
+  emojis: string[];
+}
+
+export type ErrorType =
+  | 'BAD_CREDENTIALS'
+  | 'MISSING_SCOPES'
+  | 'NETWORK'
+  | 'RATE_LIMITED'
+  | 'UNKNOWN';
+
+export interface FormattedReason {
+  title: string;
+  description: string;
 }

@@ -1,13 +1,15 @@
-import React, { useContext } from 'react';
 import { act, fireEvent, render, waitFor } from '@testing-library/react';
+import { useContext } from 'react';
 
-import { AppContext, AppProvider } from './App';
-import { AuthState, SettingsState } from '../types';
 import { mockAccounts, mockSettings } from '../__mocks__/mock-state';
 import { useNotifications } from '../hooks/useNotifications';
+import type { AuthState, SettingsState } from '../types';
 import * as apiRequests from '../utils/api-requests';
 import * as comms from '../utils/comms';
+import Constants from '../utils/constants';
+import * as notifications from '../utils/notifications';
 import * as storage from '../utils/storage';
+import { AppContext, AppProvider } from './App';
 
 jest.mock('../hooks/useNotifications');
 
@@ -35,9 +37,14 @@ describe('context/App.tsx', () => {
 
   describe('api methods', () => {
     const apiRequestAuthMock = jest.spyOn(apiRequests, 'apiRequestAuth');
+    const getNotificationCountMock = jest.spyOn(
+      notifications,
+      'getNotificationCount',
+    );
+    getNotificationCountMock.mockReturnValue(1);
 
     const fetchNotificationsMock = jest.fn();
-    const markNotificationMock = jest.fn();
+    const markNotificationReadMock = jest.fn();
     const markNotificationDoneMock = jest.fn();
     const unsubscribeNotificationMock = jest.fn();
     const markRepoNotificationsMock = jest.fn();
@@ -45,7 +52,7 @@ describe('context/App.tsx', () => {
     beforeEach(() => {
       (useNotifications as jest.Mock).mockReturnValue({
         fetchNotifications: fetchNotificationsMock,
-        markNotification: markNotificationMock,
+        markNotificationRead: markNotificationReadMock,
         markNotificationDone: markNotificationDoneMock,
         unsubscribeNotification: unsubscribeNotificationMock,
         markRepoNotifications: markRepoNotificationsMock,
@@ -58,25 +65,25 @@ describe('context/App.tsx', () => {
       // Wait for the useEffects, for settings.participating and accounts, to run.
       // Those aren't what we're testing
       await waitFor(() =>
-        expect(fetchNotificationsMock).toHaveBeenCalledTimes(2),
+        expect(fetchNotificationsMock).toHaveBeenCalledTimes(1),
       );
 
       fetchNotificationsMock.mockReset();
 
       act(() => {
-        jest.advanceTimersByTime(60000);
+        jest.advanceTimersByTime(Constants.FETCH_INTERVAL);
         return;
       });
       expect(fetchNotificationsMock).toHaveBeenCalledTimes(1);
 
       act(() => {
-        jest.advanceTimersByTime(60000);
+        jest.advanceTimersByTime(Constants.FETCH_INTERVAL);
         return;
       });
       expect(fetchNotificationsMock).toHaveBeenCalledTimes(2);
 
       act(() => {
-        jest.advanceTimersByTime(60000);
+        jest.advanceTimersByTime(Constants.FETCH_INTERVAL);
         return;
       });
       expect(fetchNotificationsMock).toHaveBeenCalledTimes(3);
@@ -86,7 +93,11 @@ describe('context/App.tsx', () => {
       const TestComponent = () => {
         const { fetchNotifications } = useContext(AppContext);
 
-        return <button onClick={fetchNotifications}>Test Case</button>;
+        return (
+          <button type="button" onClick={fetchNotifications}>
+            Test Case
+          </button>
+        );
       };
 
       const { getByText } = customRender(<TestComponent />);
@@ -98,12 +109,15 @@ describe('context/App.tsx', () => {
       expect(fetchNotificationsMock).toHaveBeenCalledTimes(1);
     });
 
-    it('should call markNotification', async () => {
+    it('should call markNotificationRead', async () => {
       const TestComponent = () => {
-        const { markNotification } = useContext(AppContext);
+        const { markNotificationRead } = useContext(AppContext);
 
         return (
-          <button onClick={() => markNotification('123-456', 'github.com')}>
+          <button
+            type="button"
+            onClick={() => markNotificationRead('123-456', 'github.com')}
+          >
             Test Case
           </button>
         );
@@ -111,12 +125,12 @@ describe('context/App.tsx', () => {
 
       const { getByText } = customRender(<TestComponent />);
 
-      markNotificationMock.mockReset();
+      markNotificationReadMock.mockReset();
 
       fireEvent.click(getByText('Test Case'));
 
-      expect(markNotificationMock).toHaveBeenCalledTimes(1);
-      expect(markNotificationMock).toHaveBeenCalledWith(
+      expect(markNotificationReadMock).toHaveBeenCalledTimes(1);
+      expect(markNotificationReadMock).toHaveBeenCalledWith(
         { enterpriseAccounts: [], token: null, user: null },
         '123-456',
         'github.com',
@@ -128,7 +142,10 @@ describe('context/App.tsx', () => {
         const { markNotificationDone } = useContext(AppContext);
 
         return (
-          <button onClick={() => markNotificationDone('123-456', 'github.com')}>
+          <button
+            type="button"
+            onClick={() => markNotificationDone('123-456', 'github.com')}
+          >
             Test Case
           </button>
         );
@@ -154,6 +171,7 @@ describe('context/App.tsx', () => {
 
         return (
           <button
+            type="button"
             onClick={() => unsubscribeNotification('123-456', 'github.com')}
           >
             Test Case
@@ -181,6 +199,7 @@ describe('context/App.tsx', () => {
 
         return (
           <button
+            type="button"
             onClick={() =>
               markRepoNotifications('manosim/gitify', 'github.com')
             }
@@ -212,6 +231,7 @@ describe('context/App.tsx', () => {
 
         return (
           <button
+            type="button"
             onClick={() =>
               validateToken({ hostname: 'github.com', token: '123-456' })
             }
@@ -226,7 +246,7 @@ describe('context/App.tsx', () => {
       fireEvent.click(getByText('Test Case'));
 
       await waitFor(() =>
-        expect(fetchNotificationsMock).toHaveBeenCalledTimes(2),
+        expect(fetchNotificationsMock).toHaveBeenCalledTimes(1),
       );
 
       expect(apiRequestAuthMock).toHaveBeenCalledTimes(2);
@@ -249,7 +269,11 @@ describe('context/App.tsx', () => {
     const TestComponent = () => {
       const { logout } = useContext(AppContext);
 
-      return <button onClick={logout}>Test Case</button>;
+      return (
+        <button type="button" onClick={logout}>
+          Test Case
+        </button>
+      );
     };
 
     const { getByText } = customRender(<TestComponent />);
@@ -270,7 +294,10 @@ describe('context/App.tsx', () => {
       const { updateSetting } = useContext(AppContext);
 
       return (
-        <button onClick={() => updateSetting('participating', true)}>
+        <button
+          type="button"
+          onClick={() => updateSetting('participating', true)}
+        >
           Test Case
         </button>
       );
@@ -285,13 +312,16 @@ describe('context/App.tsx', () => {
     expect(saveStateMock).toHaveBeenCalledWith(
       { enterpriseAccounts: [], token: null, user: null },
       {
-        appearance: 'SYSTEM',
-        openAtStartup: false,
         participating: true,
         playSound: true,
         showNotifications: true,
-        colors: null,
+        showBots: true,
+        showNotificationsCountInTray: false,
+        openAtStartup: false,
+        theme: 'SYSTEM',
+        detailedNotifications: false,
         markAsDoneOnOpen: false,
+        showAccountHostname: false,
       },
     );
   });
@@ -306,7 +336,10 @@ describe('context/App.tsx', () => {
       const { updateSetting } = useContext(AppContext);
 
       return (
-        <button onClick={() => updateSetting('openAtStartup', true)}>
+        <button
+          type="button"
+          onClick={() => updateSetting('openAtStartup', true)}
+        >
           Test Case
         </button>
       );
@@ -323,13 +356,16 @@ describe('context/App.tsx', () => {
     expect(saveStateMock).toHaveBeenCalledWith(
       { enterpriseAccounts: [], token: null, user: null },
       {
-        appearance: 'SYSTEM',
-        openAtStartup: true,
         participating: false,
         playSound: true,
         showNotifications: true,
-        colors: null,
+        showBots: true,
+        showNotificationsCountInTray: false,
+        openAtStartup: true,
+        theme: 'SYSTEM',
+        detailedNotifications: false,
         markAsDoneOnOpen: false,
+        showAccountHostname: false,
       },
     );
   });
