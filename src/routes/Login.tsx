@@ -1,10 +1,12 @@
-import { KeyIcon, PersonIcon } from '@primer/octicons-react';
+import { KeyIcon, MarkGithubIcon, PersonIcon } from '@primer/octicons-react';
 import { ipcRenderer } from 'electron';
-import { type FC, useContext, useEffect } from 'react';
+import { type FC, useCallback, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Logo } from '../components/Logo';
 import { Button } from '../components/fields/Button';
 import { AppContext } from '../context/App';
+import { authGitHub, getGitHubAuthURL } from '../utils/auth/utils';
+import { openExternalLink } from '../utils/comms';
 
 export const LoginRoute: FC = () => {
   const navigate = useNavigate();
@@ -17,14 +19,14 @@ export const LoginRoute: FC = () => {
     }
   }, [isLoggedIn]);
 
-  // FIXME: Temporarily disable Login with GitHub (OAuth) as it's currently broken and requires a rewrite - see #485 #561 #747
-  /* const loginUser = useCallback(async () => {
+  const loginUser = useCallback(async () => {
     try {
-      await login();
+      openExternalLink(getGitHubAuthURL());
+      await authGitHub();
     } catch (err) {
       // Skip
     }
-  }, []); */
+  }, []);
 
   return (
     <div className="flex flex-1 flex-col justify-center items-center p-4 bg-white dark:bg-gray-dark dark:text-white">
@@ -35,19 +37,13 @@ export const LoginRoute: FC = () => {
       </div>
 
       <div className="font-semibold text-center text-sm italic">Login with</div>
-      {
-        // FIXME: Temporarily disable Login with GitHub (OAuth) as it's currently broken and requires a rewrite - see #485 #561 #747
-        /*    
-       <Button
+      <Button
         name="GitHub"
-        icon={MarkGitHubIcon}
+        icon={MarkGithubIcon}
         label="Login with GitHub"
-        class="w-50 px-2 py-2 my-2 text-xs"
+        class="py-2 mt-2"
         onClick={loginUser}
-      />  
-      */
-      }
-
+      />
       <Button
         name="Personal Access Token"
         icon={KeyIcon}

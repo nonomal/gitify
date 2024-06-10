@@ -8,6 +8,7 @@ export const Constants = {
     hostname: 'github.com',
     clientId: process.env.OAUTH_CLIENT_ID,
     clientSecret: process.env.OAUTH_CLIENT_SECRET,
+    redirect: 'gitify://auth/callback',
   },
 
   GITHUB_API_BASE_URL: 'https://api.github.com',

@@ -107,3 +107,5 @@ mb.on('ready', () => {
     app.setLoginItemSettings(settings);
   });
 });
+
+// TODO - Implement protocol event handler https://www.electronjs.org/docs/latest/api/protocol

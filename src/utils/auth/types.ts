@@ -6,6 +6,7 @@ export interface LoginOAuthAppOptions {
   hostname: string;
   clientId: string;
   clientSecret: string;
+  redirect: string;
 }
 
 export interface LoginPersonalAccessTokenOptions {

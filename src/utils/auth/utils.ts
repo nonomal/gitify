@@ -4,6 +4,7 @@ import type { Account, AuthState, GitifyUser } from '../../types';
 import type { UserDetails } from '../../typesGitHub';
 import { getAuthenticatedUser } from '../api/client';
 import { apiRequest } from '../api/request';
+import { openExternalLink } from '../comms';
 import { Constants } from '../constants';
 import { getPlatformFromHostname } from '../helpers';
 import type { AuthMethod, AuthResponse, AuthTokenResponse } from './types';
@@ -21,6 +22,9 @@ export const authGitHub = (
 
     const githubUrl = `https://${authOptions.hostname}/login/oauth/authorize`;
     const authUrl = `${githubUrl}?client_id=${authOptions.clientId}&scope=${Constants.AUTH_SCOPE}`;
+
+    console.log('ADAM HERE');
+    openExternalLink(authUrl);
 
     const session = authWindow.webContents.session;
     session.clearStorageData();
@@ -136,6 +140,22 @@ export function removeAccount(auth: AuthState, account: Account): AuthState {
   return {
     accounts: updatedAccounts,
   };
+}
+
+export function getGitHubAuthURL() {
+  const authURL = new URL(`https://${Constants.DEFAULT_AUTH_OPTIONS.hostname}`);
+  authURL.pathname = '/login/oauth/authorize';
+  authURL.searchParams.append(
+    'client_id',
+    Constants.DEFAULT_AUTH_OPTIONS.clientId,
+  );
+  authURL.searchParams.append(
+    'redirect_uri',
+    Constants.DEFAULT_AUTH_OPTIONS.redirect,
+  );
+  authURL.searchParams.append('scope', Constants.AUTH_SCOPE.join(','));
+
+  return authURL.toString();
 }
 
 export function getDeveloperSettingsURL(account: Account): string {
