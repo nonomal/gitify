@@ -13,9 +13,8 @@ import * as links from '../utils/links';
 import { NotificationRow } from './NotificationRow';
 
 describe('components/NotificationRow.tsx', () => {
-  beforeEach(() => {
-    jest.spyOn(links, 'openNotification');
-  });
+  jest.spyOn(links, 'openNotification');
+  jest.spyOn(comms, 'openExternalLink').mockImplementation();
 
   afterEach(() => {
     jest.clearAllMocks();
@@ -61,9 +60,29 @@ describe('components/NotificationRow.tsx', () => {
     expect(tree).toMatchSnapshot();
   });
 
+  it('should render itself & its children - hide numbers', async () => {
+    jest
+      .spyOn(global.Date, 'now')
+      .mockImplementation(() => new Date('2024').valueOf());
+
+    const props = {
+      notification: mockSingleNotification,
+      account: mockGitHubCloudAccount,
+    };
+
+    const tree = render(
+      <AppContext.Provider
+        value={{ settings: { ...mockSettings, showNumber: false } }}
+      >
+        <NotificationRow {...props} />
+      </AppContext.Provider>,
+    );
+    expect(tree).toMatchSnapshot();
+  });
+
   describe('notification interactions', () => {
     it('should open a notification in the browser - click', () => {
-      const removeNotificationFromState = jest.fn();
+      const markNotificationRead = jest.fn();
 
       const props = {
         notification: mockSingleNotification,
@@ -74,7 +93,7 @@ describe('components/NotificationRow.tsx', () => {
         <AppContext.Provider
           value={{
             settings: { ...mockSettings, markAsDoneOnOpen: false },
-            removeNotificationFromState,
+            markNotificationRead,
             auth: mockAuth,
           }}
         >
@@ -84,11 +103,11 @@ describe('components/NotificationRow.tsx', () => {
 
       fireEvent.click(screen.getByRole('main'));
       expect(links.openNotification).toHaveBeenCalledTimes(1);
-      expect(removeNotificationFromState).toHaveBeenCalledTimes(1);
+      expect(markNotificationRead).toHaveBeenCalledTimes(1);
     });
 
     it('should open a notification in the browser - delay notification setting enabled', () => {
-      const removeNotificationFromState = jest.fn();
+      const markNotificationRead = jest.fn();
 
       const props = {
         notification: mockSingleNotification,
@@ -103,7 +122,7 @@ describe('components/NotificationRow.tsx', () => {
               markAsDoneOnOpen: false,
               delayNotificationState: true,
             },
-            removeNotificationFromState,
+            markNotificationRead,
             auth: mockAuth,
           }}
         >
@@ -113,11 +132,11 @@ describe('components/NotificationRow.tsx', () => {
 
       fireEvent.click(screen.getByRole('main'));
       expect(links.openNotification).toHaveBeenCalledTimes(1);
-      expect(removeNotificationFromState).toHaveBeenCalledTimes(1);
+      expect(markNotificationRead).toHaveBeenCalledTimes(1);
     });
 
     it('should open a notification in the browser - key down', () => {
-      const removeNotificationFromState = jest.fn();
+      const markNotificationRead = jest.fn();
 
       const props = {
         notification: mockSingleNotification,
@@ -128,7 +147,7 @@ describe('components/NotificationRow.tsx', () => {
         <AppContext.Provider
           value={{
             settings: { ...mockSettings, markAsDoneOnOpen: false },
-            removeNotificationFromState,
+            markNotificationRead,
             auth: mockAuth,
           }}
         >
@@ -138,7 +157,7 @@ describe('components/NotificationRow.tsx', () => {
 
       fireEvent.click(screen.getByRole('main'));
       expect(links.openNotification).toHaveBeenCalledTimes(1);
-      expect(removeNotificationFromState).toHaveBeenCalledTimes(1);
+      expect(markNotificationRead).toHaveBeenCalledTimes(1);
     });
 
     it('should open a notification in browser & mark it as done', () => {

@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import { mockGitHubCloudAccount } from '../__mocks__/state-mocks';
+import { mockGitHubCloudAccount, mockSettings } from '../__mocks__/state-mocks';
 import { AppContext } from '../context/App';
 import type { Link } from '../types';
 import {
@@ -37,7 +37,9 @@ describe('components/Repository.tsx', () => {
   });
 
   it('should open the browser when clicking on the repo name', () => {
-    const openExternalLinkMock = jest.spyOn(comms, 'openExternalLink');
+    const openExternalLinkMock = jest
+      .spyOn(comms, 'openExternalLink')
+      .mockImplementation();
 
     render(
       <AppContext.Provider value={{}}>
@@ -55,7 +57,9 @@ describe('components/Repository.tsx', () => {
 
   it('should mark a repo as read', () => {
     render(
-      <AppContext.Provider value={{ markRepoNotificationsRead }}>
+      <AppContext.Provider
+        value={{ settings: { ...mockSettings }, markRepoNotificationsRead }}
+      >
         <RepositoryNotifications {...props} />
       </AppContext.Provider>,
     );
@@ -69,7 +73,9 @@ describe('components/Repository.tsx', () => {
 
   it('should mark a repo as done', () => {
     render(
-      <AppContext.Provider value={{ markRepoNotificationsDone }}>
+      <AppContext.Provider
+        value={{ settings: { ...mockSettings }, markRepoNotificationsDone }}
+      >
         <RepositoryNotifications {...props} />
       </AppContext.Provider>,
     );

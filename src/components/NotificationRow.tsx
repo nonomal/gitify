@@ -10,7 +10,10 @@ import { AppContext } from '../context/App';
 import { Opacity, Size } from '../types';
 import type { Notification } from '../typesGitHub';
 import { cn } from '../utils/cn';
-import { formatForDisplay } from '../utils/helpers';
+import {
+  formatForDisplay,
+  isMarkAsDoneFeatureSupported,
+} from '../utils/helpers';
 import {
   getNotificationTypeIcon,
   getNotificationTypeIconColor,
@@ -23,14 +26,17 @@ import { NotificationHeader } from './notification/NotificationHeader';
 
 interface INotificationRow {
   notification: Notification;
+  isAnimated?: boolean;
+  isRead?: boolean;
 }
 
 export const NotificationRow: FC<INotificationRow> = ({
   notification,
+  isAnimated = false,
+  isRead = false,
 }: INotificationRow) => {
   const {
     settings,
-    removeNotificationFromState,
     markNotificationRead,
     markNotificationDone,
     unsubscribeNotification,
@@ -47,15 +53,10 @@ export const NotificationRow: FC<INotificationRow> = ({
     if (settings.markAsDoneOnOpen) {
       markNotificationDone(notification);
     } else {
-      // no need to mark as read, github does it by default when opening it
-      removeNotificationFromState(settings, notification);
+      markNotificationRead(notification);
     }
-  }, [
-    notification,
-    markNotificationDone,
-    removeNotificationFromState,
-    settings,
-  ]);
+  }, [notification, markNotificationDone, markNotificationRead, settings]);
+
   const unsubscribeFromThread = (event: MouseEvent<HTMLElement>) => {
     // Don't trigger onClick of parent element.
     event.stopPropagation();
@@ -71,6 +72,13 @@ export const NotificationRow: FC<INotificationRow> = ({
     notification.subject.type,
   ]);
 
+  const notificationNumber = notification.subject?.number
+    ? `#${notification.subject.number}`
+    : '';
+
+  const notificationTitle =
+    `${notification.subject.title} ${notificationNumber}`.trim();
+
   const groupByDate = settings.groupBy === 'DATE';
 
   return (
@@ -78,9 +86,9 @@ export const NotificationRow: FC<INotificationRow> = ({
       id={notification.id}
       className={cn(
         'group flex border-b border-gray-100 bg-white px-3 py-2 hover:bg-gray-100 dark:border-gray-darker dark:bg-gray-dark dark:text-white dark:hover:bg-gray-darker',
-        animateExit &&
+        (isAnimated || animateExit) &&
           'translate-x-full opacity-0 transition duration-[350ms] ease-in-out',
-        showAsRead && Opacity.READ,
+        (isRead || showAsRead) && Opacity.READ,
       )}
     >
       <div
@@ -94,50 +102,63 @@ export const NotificationRow: FC<INotificationRow> = ({
       </div>
 
       <div
-        className="flex-1 overflow-hidden overflow-ellipsis whitespace-nowrap cursor-pointer"
+        className="flex-1 truncate cursor-pointer"
         onClick={() => handleNotification()}
       >
         <NotificationHeader notification={notification} />
 
         <div
-          className="mb-1 truncate text-sm"
+          className="flex gap-1 items-center mb-1 truncate text-sm"
           role="main"
-          title={notification.subject.title}
+          title={notificationTitle}
         >
-          {notification.subject.title}
+          <span className="truncate">{notification.subject.title}</span>
+          <span
+            className={cn(
+              'text-xxs',
+              Opacity.READ,
+              !settings.showNumber && 'hidden',
+            )}
+          >
+            {notificationNumber}
+          </span>
         </div>
 
         <NotificationFooter notification={notification} />
       </div>
 
-      <HoverGroup>
-        <InteractionButton
-          title="Mark as Done"
-          icon={CheckIcon}
-          size={Size.MEDIUM}
-          onClick={() => {
-            setAnimateExit(!settings.delayNotificationState);
-            setShowAsRead(settings.delayNotificationState);
-            markNotificationDone(notification);
-          }}
-        />
-        <InteractionButton
-          title="Mark as Read"
-          icon={ReadIcon}
-          size={Size.SMALL}
-          onClick={() => {
-            setAnimateExit(!settings.delayNotificationState);
-            setShowAsRead(settings.delayNotificationState);
-            markNotificationRead(notification);
-          }}
-        />
-        <InteractionButton
-          title="Unsubscribe from Thread"
-          icon={BellSlashIcon}
-          size={Size.SMALL}
-          onClick={unsubscribeFromThread}
-        />
-      </HoverGroup>
+      {!animateExit && (
+        <HoverGroup>
+          {isMarkAsDoneFeatureSupported(notification.account) && (
+            <InteractionButton
+              title="Mark as Done"
+              icon={CheckIcon}
+              size={Size.MEDIUM}
+              onClick={() => {
+                setAnimateExit(!settings.delayNotificationState);
+                setShowAsRead(settings.delayNotificationState);
+                markNotificationDone(notification);
+              }}
+            />
+          )}
+          <InteractionButton
+            title="Mark as Read"
+            icon={ReadIcon}
+            size={Size.SMALL}
+            onClick={() => {
+              setAnimateExit(!settings.delayNotificationState);
+              setShowAsRead(settings.delayNotificationState);
+              markNotificationRead(notification);
+            }}
+          />
+          <InteractionButton
+            title="Unsubscribe from Thread"
+            icon={BellSlashIcon}
+            size={Size.SMALL}
+            onClick={unsubscribeFromThread}
+          />
+        </HoverGroup>
+      )}
     </div>
   );
 };

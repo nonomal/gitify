@@ -34,10 +34,9 @@ For more information, see [LICENSE](LICENSE).
 [github]: https://github.com/gitify-app/gitify
 [github-actions]: https://github.com/gitify-app/gitify/actions
 [github-releases]: https://github.com/gitify-app/gitify/releases/latest
-[github-new-release]: https://github.com/gitify-app/gitify/releases/new
 [github-website]: https://github.com/gitify-app/website
 [github-website-pulls]: https://github.com/gitify-app/website/pulls
-[brew]: http://brew.sh/
+[brew]: https://brew.sh/
 [homebrew-cask]: https://formulae.brew.sh/cask/gitify
 [coveralls]: https://coveralls.io/github/gitify-app/gitify
 [coveralls-badge]: https://img.shields.io/coverallsCoverage/github/gitify-app/gitify?logo=coveralls
@@ -53,4 +52,4 @@ For more information, see [LICENSE](LICENSE).
 [github-release-badge]: https://img.shields.io/github/v/release/gitify-app/gitify?logo=github
 [homebrew-cask-badge]: https://img.shields.io/homebrew/cask/v/gitify?logo=homebrew
 [renovate]: https://renovatebot.com/
-[renovate-badge]: https://img.shields.io/badge/renovate-enabled-brightgreen.svg?logo=renovatebot
+[renovate-badge]: https://img.shields.io/badge/renovate-enabled-brightgreen.svg?logo=renovate

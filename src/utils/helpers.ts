@@ -1,6 +1,6 @@
 import { formatDistanceToNowStrict, parseISO } from 'date-fns';
 import { defaultSettings } from '../context/App';
-import type { Hostname, Link, SettingsState } from '../types';
+import type { Account, Hostname, Link, SettingsState } from '../types';
 import type { Notification } from '../typesGitHub';
 import { getHtmlUrl, getLatestDiscussion } from './api/client';
 import type { PlatformType } from './auth/types';
@@ -17,8 +17,22 @@ export function getPlatformFromHostname(hostname: string): PlatformType {
     : 'GitHub Enterprise Server';
 }
 
-export function isEnterpriseHost(hostname: Hostname): boolean {
+export function isEnterpriseServerHost(hostname: Hostname): boolean {
   return !hostname.endsWith(Constants.DEFAULT_AUTH_OPTIONS.hostname);
+}
+
+export function isMarkAsDoneFeatureSupported(account: Account): boolean {
+  if (isEnterpriseServerHost(account.hostname)) {
+    // Support for "Mark as Done" was added to GitHub Enterprise Server in v3.13 or newer
+    if (account.version) {
+      const version = account?.version.split('.').map(Number);
+      return version[0] >= 3 && version[1] >= 13;
+    }
+
+    return false;
+  }
+
+  return true;
 }
 
 export function generateNotificationReferrerId(
@@ -124,6 +138,9 @@ export async function generateGitHubWebUrl(
         break;
       case 'RepositoryInvitation':
         url.pathname += '/invitations';
+        break;
+      case 'RepositoryDependabotAlertsThread':
+        url.pathname += '/security/dependabot';
         break;
       case 'WorkflowRun':
         url.href = getWorkflowRunUrl(notification);

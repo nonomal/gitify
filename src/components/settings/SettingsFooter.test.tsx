@@ -11,7 +11,9 @@ jest.mock('react-router-dom', () => ({
   useNavigate: () => mockNavigate,
 }));
 
-describe('routes/components/SettingsFooter.tsx', () => {
+global.ResizeObserver = require('resize-observer-polyfill');
+
+describe('routes/components/settings/SettingsFooter.tsx', () => {
   afterEach(() => {
     jest.clearAllMocks();
     process.env = originalEnv;
@@ -46,7 +48,7 @@ describe('routes/components/SettingsFooter.tsx', () => {
         );
       });
 
-      expect(screen.getByTitle('app-version')).toMatchSnapshot();
+      expect(screen.getByLabelText('app-version')).toMatchSnapshot();
     });
 
     it('should show development app version', async () => {
@@ -70,7 +72,49 @@ describe('routes/components/SettingsFooter.tsx', () => {
         );
       });
 
-      expect(screen.getByTitle('app-version')).toMatchSnapshot();
+      expect(screen.getByLabelText('app-version')).toMatchSnapshot();
+    });
+  });
+
+  describe('update available visual indicator', () => {
+    it('using latest version', async () => {
+      await act(async () => {
+        render(
+          <AppContext.Provider
+            value={{
+              auth: mockAuth,
+              settings: mockSettings,
+            }}
+          >
+            <MemoryRouter>
+              <SettingsFooter isUpdateAvailable={false} />
+            </MemoryRouter>
+          </AppContext.Provider>,
+        );
+      });
+
+      expect(
+        screen.getByTitle('You are using the latest version'),
+      ).toMatchSnapshot();
+    });
+
+    it('new version available', async () => {
+      await act(async () => {
+        render(
+          <AppContext.Provider
+            value={{
+              auth: mockAuth,
+              settings: mockSettings,
+            }}
+          >
+            <MemoryRouter>
+              <SettingsFooter isUpdateAvailable={true} />
+            </MemoryRouter>
+          </AppContext.Provider>,
+        );
+      });
+
+      expect(screen.getByTitle('New version available')).toMatchSnapshot();
     });
   });
 
@@ -79,7 +123,9 @@ describe('routes/components/SettingsFooter.tsx', () => {
       ...originalEnv,
       NODE_ENV: 'production',
     };
-    const openExternalLinkMock = jest.spyOn(comms, 'openExternalLink');
+    const openExternalLinkMock = jest
+      .spyOn(comms, 'openExternalLink')
+      .mockImplementation();
 
     await act(async () => {
       render(

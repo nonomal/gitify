@@ -304,28 +304,6 @@ describe('context/App.tsx', () => {
     });
   });
 
-  it('should call logout', async () => {
-    const clearStateMock = jest.spyOn(storage, 'clearState');
-
-    const TestComponent = () => {
-      const { logout } = useContext(AppContext);
-
-      return (
-        <button type="button" onClick={logout}>
-          Test Case
-        </button>
-      );
-    };
-
-    const { getByText } = customRender(<TestComponent />);
-
-    act(() => {
-      fireEvent.click(getByText('Test Case'));
-    });
-
-    expect(clearStateMock).toHaveBeenCalledTimes(1);
-  });
-
   describe('settings methods', () => {
     const fetchNotificationsMock = jest.fn();
 
@@ -379,9 +357,12 @@ describe('context/App.tsx', () => {
           showAccountHostname: false,
           delayNotificationState: false,
           showPills: true,
+          showNumber: true,
           keyboardShortcut: true,
           groupBy: 'REPOSITORY',
           filterReasons: [],
+          zoomPercentage: 100,
+          openLinks: 'FOREGROUND',
         } as SettingsState,
       });
     });
@@ -433,9 +414,12 @@ describe('context/App.tsx', () => {
           showAccountHostname: false,
           delayNotificationState: false,
           showPills: true,
+          showNumber: true,
           keyboardShortcut: true,
           groupBy: 'REPOSITORY',
           filterReasons: [],
+          zoomPercentage: 100,
+          openLinks: 'FOREGROUND',
         } as SettingsState,
       });
     });

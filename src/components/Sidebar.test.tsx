@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { mockAccountNotifications } from '../__mocks__/notifications-mocks';
-import { mockSettings } from '../__mocks__/state-mocks';
+import { mockAuth, mockSettings } from '../__mocks__/state-mocks';
 import { AppContext } from '../context/App';
 import { IconColor } from '../types';
 import * as comms from '../utils/comms';
@@ -15,8 +15,9 @@ jest.mock('react-router-dom', () => ({
 
 describe('components/Sidebar.tsx', () => {
   const fetchNotifications = jest.fn();
-
-  const openExternalLinkMock = jest.spyOn(comms, 'openExternalLink');
+  const openExternalLinkMock = jest
+    .spyOn(comms, 'openExternalLink')
+    .mockImplementation();
 
   afterEach(() => {
     jest.clearAllMocks();
@@ -26,8 +27,9 @@ describe('components/Sidebar.tsx', () => {
     const tree = render(
       <AppContext.Provider
         value={{
-          settings: mockSettings,
           notifications: mockAccountNotifications,
+          auth: mockAuth,
+          settings: mockSettings,
         }}
       >
         <MemoryRouter>
@@ -45,6 +47,7 @@ describe('components/Sidebar.tsx', () => {
         value={{
           isLoggedIn: false,
           notifications: mockAccountNotifications,
+          auth: mockAuth,
           settings: mockSettings,
         }}
       >
@@ -60,7 +63,12 @@ describe('components/Sidebar.tsx', () => {
   it('should open the gitify repository', () => {
     render(
       <AppContext.Provider
-        value={{ isLoggedIn: false, notifications: [], settings: mockSettings }}
+        value={{
+          isLoggedIn: false,
+          notifications: [],
+          auth: mockAuth,
+          settings: mockSettings,
+        }}
       >
         <MemoryRouter>
           <Sidebar />
@@ -84,6 +92,7 @@ describe('components/Sidebar.tsx', () => {
             value={{
               isLoggedIn: true,
               notifications: [],
+              auth: mockAuth,
               settings: mockSettings,
             }}
           >
@@ -113,6 +122,7 @@ describe('components/Sidebar.tsx', () => {
             value={{
               isLoggedIn: true,
               notifications: mockAccountNotifications,
+              auth: mockAuth,
               settings: mockSettings,
             }}
           >
@@ -145,6 +155,7 @@ describe('components/Sidebar.tsx', () => {
         value={{
           isLoggedIn: true,
           notifications: mockAccountNotifications,
+          auth: mockAuth,
           settings: mockSettings,
         }}
       >
@@ -168,6 +179,7 @@ describe('components/Sidebar.tsx', () => {
         value={{
           isLoggedIn: true,
           notifications: mockAccountNotifications,
+          auth: mockAuth,
           settings: mockSettings,
         }}
       >
@@ -192,6 +204,7 @@ describe('components/Sidebar.tsx', () => {
           value={{
             isLoggedIn: true,
             notifications: [],
+            auth: mockAuth,
             settings: mockSettings,
             fetchNotifications,
             status: 'success',
@@ -214,6 +227,7 @@ describe('components/Sidebar.tsx', () => {
           value={{
             isLoggedIn: true,
             notifications: [],
+            auth: mockAuth,
             settings: mockSettings,
             fetchNotifications,
             status: 'loading',
@@ -238,6 +252,7 @@ describe('components/Sidebar.tsx', () => {
           value={{
             isLoggedIn: true,
             notifications: [],
+            auth: mockAuth,
             settings: mockSettings,
           }}
         >
@@ -256,6 +271,7 @@ describe('components/Sidebar.tsx', () => {
           value={{
             isLoggedIn: true,
             notifications: [],
+            auth: mockAuth,
             settings: mockSettings,
           }}
         >
@@ -276,6 +292,7 @@ describe('components/Sidebar.tsx', () => {
           value={{
             isLoggedIn: true,
             notifications: [],
+            auth: mockAuth,
             settings: mockSettings,
           }}
         >
@@ -296,6 +313,7 @@ describe('components/Sidebar.tsx', () => {
           value={{
             isLoggedIn: true,
             notifications: [],
+            auth: mockAuth,
             settings: mockSettings,
             fetchNotifications,
           }}
@@ -321,6 +339,7 @@ describe('components/Sidebar.tsx', () => {
         value={{
           isLoggedIn: true,
           notifications: mockAccountNotifications,
+          auth: mockAuth,
           settings: mockSettings,
         }}
       >
@@ -344,6 +363,7 @@ describe('components/Sidebar.tsx', () => {
         value={{
           isLoggedIn: true,
           notifications: mockAccountNotifications,
+          auth: mockAuth,
           settings: mockSettings,
         }}
       >
@@ -367,6 +387,7 @@ describe('components/Sidebar.tsx', () => {
         value={{
           isLoggedIn: true,
           notifications: mockAccountNotifications,
+          auth: mockAuth,
           settings: mockSettings,
         }}
       >
@@ -387,7 +408,12 @@ describe('components/Sidebar.tsx', () => {
 
     render(
       <AppContext.Provider
-        value={{ isLoggedIn: false, notifications: [], settings: mockSettings }}
+        value={{
+          isLoggedIn: false,
+          notifications: [],
+          auth: mockAuth,
+          settings: mockSettings,
+        }}
       >
         <MemoryRouter>
           <Sidebar />
@@ -405,7 +431,12 @@ describe('components/Sidebar.tsx', () => {
 
     render(
       <AppContext.Provider
-        value={{ isLoggedIn: false, notifications: [], settings: mockSettings }}
+        value={{
+          isLoggedIn: false,
+          notifications: [],
+          auth: mockAuth,
+          settings: mockSettings,
+        }}
       >
         <MemoryRouter>
           <Sidebar />
@@ -426,6 +457,7 @@ describe('components/Sidebar.tsx', () => {
           value={{
             isLoggedIn: true,
             notifications: [],
+            auth: mockAuth,
             settings: mockSettings,
           }}
         >
@@ -447,6 +479,7 @@ describe('components/Sidebar.tsx', () => {
           value={{
             isLoggedIn: true,
             notifications: mockAccountNotifications,
+            auth: mockAuth,
             settings: mockSettings,
           }}
         >

@@ -1,3 +1,4 @@
+import { ipcRenderer, webFrame } from 'electron';
 import {
   type ReactNode,
   createContext,
@@ -14,6 +15,7 @@ import {
   type AuthState,
   type GitifyError,
   GroupBy,
+  OpenPreference,
   type SettingsState,
   type SettingsValue,
   type Status,
@@ -42,6 +44,7 @@ import Constants from '../utils/constants';
 import { getNotificationCount } from '../utils/notifications';
 import { clearState, loadState, saveState } from '../utils/storage';
 import { setTheme } from '../utils/theme';
+import { zoomPercentageToLevel } from '../utils/zoom';
 
 const defaultAuth: AuthState = {
   accounts: [],
@@ -50,25 +53,40 @@ const defaultAuth: AuthState = {
   user: null,
 };
 
+const defaultAppearanceSettings = {
+  theme: Theme.SYSTEM,
+  zoomPercentage: 100,
+  detailedNotifications: true,
+  showPills: true,
+  showNumber: true,
+  showAccountHostname: false,
+};
+
+const defaultNotificationSettings = {
+  groupBy: GroupBy.REPOSITORY,
+  participating: false,
+  markAsDoneOnOpen: false,
+  delayNotificationState: false,
+};
+
+const defaultSystemSettings = {
+  openLinks: OpenPreference.FOREGROUND,
+  keyboardShortcut: true,
+  showNotificationsCountInTray: false,
+  showNotifications: true,
+  playSound: true,
+  openAtStartup: false,
+};
+
 export const defaultFilters = {
   hideBots: false,
   filterReasons: [],
 };
 
 export const defaultSettings: SettingsState = {
-  participating: false,
-  playSound: true,
-  showNotifications: true,
-  showNotificationsCountInTray: false,
-  openAtStartup: false,
-  theme: Theme.SYSTEM,
-  detailedNotifications: true,
-  markAsDoneOnOpen: false,
-  showAccountHostname: false,
-  delayNotificationState: false,
-  showPills: true,
-  keyboardShortcut: true,
-  groupBy: GroupBy.REPOSITORY,
+  ...defaultAppearanceSettings,
+  ...defaultNotificationSettings,
+  ...defaultSystemSettings,
   ...defaultFilters,
 };
 
@@ -79,15 +97,10 @@ interface AppContextState {
   loginWithOAuthApp: (data: LoginOAuthAppOptions) => void;
   loginWithPersonalAccessToken: (data: LoginPersonalAccessTokenOptions) => void;
   logoutFromAccount: (account: Account) => void;
-  logout: () => void;
 
   notifications: AccountNotifications[];
   status: Status;
-  errorDetails: GitifyError;
-  removeNotificationFromState: (
-    settings: SettingsState,
-    notification: Notification,
-  ) => void;
+  globalError: GitifyError;
   fetchNotifications: () => Promise<void>;
   markNotificationRead: (notification: Notification) => Promise<void>;
   markNotificationDone: (notification: Notification) => Promise<void>;
@@ -109,9 +122,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const {
     fetchNotifications,
     notifications,
-    errorDetails,
+    globalError,
     status,
-    removeNotificationFromState,
     markNotificationRead,
     markNotificationDone,
     unsubscribeNotification,
@@ -150,11 +162,18 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setKeyboardShortcut(settings.keyboardShortcut);
   }, [settings.keyboardShortcut]);
 
+  useEffect(() => {
+    ipcRenderer.on('gitify:reset-app', () => {
+      setAuth(defaultAuth);
+      clearState();
+    });
+  }, []);
+
   const clearFilters = useCallback(() => {
     const newSettings = { ...settings, ...defaultFilters };
     setSettings(newSettings);
     saveState({ auth, settings: newSettings });
-  }, [auth]);
+  }, [auth, settings]);
 
   const resetSettings = useCallback(() => {
     setSettings(defaultSettings);
@@ -226,11 +245,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     [auth, settings],
   );
 
-  const logout = useCallback(() => {
-    setAuth(defaultAuth);
-    clearState();
-  }, []);
-
   const restoreSettings = useCallback(async () => {
     await migrateAuthenticatedAccounts();
 
@@ -243,7 +257,17 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     if (existing.settings) {
       setKeyboardShortcut(existing.settings.keyboardShortcut);
       setSettings({ ...defaultSettings, ...existing.settings });
+      webFrame.setZoomLevel(
+        zoomPercentageToLevel(existing.settings.zoomPercentage),
+      );
       return existing.settings;
+    }
+
+    for (const account of auth.accounts.filter(
+      (a) => a.platform === 'GitHub Enterprise Server',
+    )) {
+      const res = await headNotifications(account.hostname, account.token);
+      account.version = res.headers['x-github-enterprise-version'];
     }
   }, []);
 
@@ -291,12 +315,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         loginWithOAuthApp,
         loginWithPersonalAccessToken,
         logoutFromAccount,
-        logout,
 
         notifications,
         status,
-        errorDetails,
-        removeNotificationFromState,
+        globalError,
         fetchNotifications: fetchNotificationsWithAccounts,
         markNotificationRead: markNotificationReadWithAccounts,
         markNotificationDone: markNotificationDoneWithAccounts,

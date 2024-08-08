@@ -6,13 +6,13 @@ exports[`components/fields/RadioGroup.tsx should render 1`] = `
   "baseElement": <body>
     <div>
       <div
-        class="mb-3 mt-1 text-sm"
+        class="mt-3 mb-2 text-sm"
       >
         <div
           class="flex items-start"
         >
           <div
-            class="mr-3 py-1"
+            class="mr-3"
           >
             <label
               class="font-medium text-gray-700 dark:text-gray-200"
@@ -27,35 +27,35 @@ exports[`components/fields/RadioGroup.tsx should render 1`] = `
             role="group"
           >
             <div
-              class="mt-1 flex"
+              class="flex items-center"
             >
               <input
-                class="size-4 border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                class="size-4 border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                 id="appearance_one"
                 name="appearance"
                 type="radio"
                 value="one"
               />
               <label
-                class="ml-3 block text-sm font-medium text-gray-700 dark:text-white"
+                class="ml-3 block text-sm font-medium text-gray-700 dark:text-white cursor-pointer"
                 for="appearance_one"
               >
                 Value 1
               </label>
             </div>
             <div
-              class="mt-1 flex"
+              class="flex items-center"
             >
               <input
                 checked=""
-                class="size-4 border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                class="size-4 border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                 id="appearance_two"
                 name="appearance"
                 type="radio"
                 value="two"
               />
               <label
-                class="ml-3 block text-sm font-medium text-gray-700 dark:text-white"
+                class="ml-3 block text-sm font-medium text-gray-700 dark:text-white cursor-pointer"
                 for="appearance_two"
               >
                 Value 2
@@ -73,13 +73,13 @@ exports[`components/fields/RadioGroup.tsx should render 1`] = `
   </body>,
   "container": <div>
     <div
-      class="mb-3 mt-1 text-sm"
+      class="mt-3 mb-2 text-sm"
     >
       <div
         class="flex items-start"
       >
         <div
-          class="mr-3 py-1"
+          class="mr-3"
         >
           <label
             class="font-medium text-gray-700 dark:text-gray-200"
@@ -94,35 +94,35 @@ exports[`components/fields/RadioGroup.tsx should render 1`] = `
           role="group"
         >
           <div
-            class="mt-1 flex"
+            class="flex items-center"
           >
             <input
-              class="size-4 border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              class="size-4 border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
               id="appearance_one"
               name="appearance"
               type="radio"
               value="one"
             />
             <label
-              class="ml-3 block text-sm font-medium text-gray-700 dark:text-white"
+              class="ml-3 block text-sm font-medium text-gray-700 dark:text-white cursor-pointer"
               for="appearance_one"
             >
               Value 1
             </label>
           </div>
           <div
-            class="mt-1 flex"
+            class="flex items-center"
           >
             <input
               checked=""
-              class="size-4 border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              class="size-4 border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
               id="appearance_two"
               name="appearance"
               type="radio"
               value="two"
             />
             <label
-              class="ml-3 block text-sm font-medium text-gray-700 dark:text-white"
+              class="ml-3 block text-sm font-medium text-gray-700 dark:text-white cursor-pointer"
               for="appearance_two"
             >
               Value 2
@@ -197,13 +197,13 @@ exports[`components/fields/RadioGroup.tsx should render as disabled 1`] = `
   "baseElement": <body>
     <div>
       <div
-        class="mb-3 mt-1 text-sm"
+        class="mt-3 mb-2 text-sm"
       >
         <div
           class="flex items-start"
         >
           <div
-            class="mr-3 py-1"
+            class="mr-3"
           >
             <label
               class="font-medium text-gray-700 dark:text-gray-200"
@@ -219,10 +219,10 @@ exports[`components/fields/RadioGroup.tsx should render as disabled 1`] = `
             role="group"
           >
             <div
-              class="mt-1 flex"
+              class="flex items-center"
             >
               <input
-                class="size-4 border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                class="size-4 border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                 disabled=""
                 id="appearance_one"
                 name="appearance"
@@ -230,18 +230,18 @@ exports[`components/fields/RadioGroup.tsx should render as disabled 1`] = `
                 value="one"
               />
               <label
-                class="ml-3 block text-sm font-medium text-gray-700 dark:text-white"
+                class="ml-3 block text-sm font-medium text-gray-700 dark:text-white cursor-pointer"
                 for="appearance_one"
               >
                 Value 1
               </label>
             </div>
             <div
-              class="mt-1 flex"
+              class="flex items-center"
             >
               <input
                 checked=""
-                class="size-4 border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                class="size-4 border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                 disabled=""
                 id="appearance_two"
                 name="appearance"
@@ -249,7 +249,7 @@ exports[`components/fields/RadioGroup.tsx should render as disabled 1`] = `
                 value="two"
               />
               <label
-                class="ml-3 block text-sm font-medium text-gray-700 dark:text-white"
+                class="ml-3 block text-sm font-medium text-gray-700 dark:text-white cursor-pointer"
                 for="appearance_two"
               >
                 Value 2
@@ -267,13 +267,13 @@ exports[`components/fields/RadioGroup.tsx should render as disabled 1`] = `
   </body>,
   "container": <div>
     <div
-      class="mb-3 mt-1 text-sm"
+      class="mt-3 mb-2 text-sm"
     >
       <div
         class="flex items-start"
       >
         <div
-          class="mr-3 py-1"
+          class="mr-3"
         >
           <label
             class="font-medium text-gray-700 dark:text-gray-200"
@@ -289,10 +289,10 @@ exports[`components/fields/RadioGroup.tsx should render as disabled 1`] = `
           role="group"
         >
           <div
-            class="mt-1 flex"
+            class="flex items-center"
           >
             <input
-              class="size-4 border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              class="size-4 border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
               disabled=""
               id="appearance_one"
               name="appearance"
@@ -300,18 +300,18 @@ exports[`components/fields/RadioGroup.tsx should render as disabled 1`] = `
               value="one"
             />
             <label
-              class="ml-3 block text-sm font-medium text-gray-700 dark:text-white"
+              class="ml-3 block text-sm font-medium text-gray-700 dark:text-white cursor-pointer"
               for="appearance_one"
             >
               Value 1
             </label>
           </div>
           <div
-            class="mt-1 flex"
+            class="flex items-center"
           >
             <input
               checked=""
-              class="size-4 border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              class="size-4 border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
               disabled=""
               id="appearance_two"
               name="appearance"
@@ -319,7 +319,7 @@ exports[`components/fields/RadioGroup.tsx should render as disabled 1`] = `
               value="two"
             />
             <label
-              class="ml-3 block text-sm font-medium text-gray-700 dark:text-white"
+              class="ml-3 block text-sm font-medium text-gray-700 dark:text-white cursor-pointer"
               for="appearance_two"
             >
               Value 2

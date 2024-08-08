@@ -46,12 +46,19 @@ export type Status = 'loading' | 'success' | 'error';
 export interface Account {
   method: AuthMethod;
   platform: PlatformType;
+  version?: string;
   hostname: Hostname;
   token: Token;
   user: GitifyUser | null;
 }
 
-export type SettingsValue = boolean | Theme | GroupBy | Reason[];
+export type SettingsValue =
+  | boolean
+  | number
+  | GroupBy
+  | OpenPreference
+  | Reason[]
+  | Theme;
 
 export type SettingsState = AppearanceSettingsState &
   NotificationSettingsState &
@@ -60,9 +67,11 @@ export type SettingsState = AppearanceSettingsState &
 
 interface AppearanceSettingsState {
   theme: Theme;
+  zoomPercentage: number;
   detailedNotifications: boolean;
   showAccountHostname: boolean;
   showPills: boolean;
+  showNumber: boolean;
 }
 
 interface NotificationSettingsState {
@@ -74,6 +83,7 @@ interface NotificationSettingsState {
 }
 
 interface SystemSettingsState {
+  openLinks: OpenPreference;
   playSound: boolean;
   openAtStartup: boolean;
   showNotificationsCountInTray: boolean;
@@ -96,6 +106,11 @@ export enum Theme {
   DARK = 'DARK',
 }
 
+export enum OpenPreference {
+  FOREGROUND = 'FOREGROUND',
+  BACKGROUND = 'FOREGROUND',
+}
+
 export enum GroupBy {
   REPOSITORY = 'REPOSITORY',
   DATE = 'DATE',
@@ -109,6 +124,7 @@ export type RadioGroupItem = {
 export interface AccountNotifications {
   account: Account;
   notifications: Notification[];
+  error: GitifyError | null;
 }
 
 export interface GitifyUser {

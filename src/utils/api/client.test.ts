@@ -1,4 +1,5 @@
 import axios, { type AxiosPromise, type AxiosResponse } from 'axios';
+import log from 'electron-log';
 import {
   mockGitHubCloudAccount,
   mockGitHubEnterpriseServerAccount,
@@ -134,7 +135,7 @@ describe('utils/api/client.ts', () => {
       expect(axios.defaults.headers.common).toMatchSnapshot();
     });
 
-    it('should mark notification thread as read- enterprise', async () => {
+    it('should mark notification thread as read - enterprise', async () => {
       await markNotificationThreadAsRead(
         mockThreadId,
         mockEnterpriseHostname,
@@ -168,7 +169,7 @@ describe('utils/api/client.ts', () => {
       expect(axios.defaults.headers.common).toMatchSnapshot();
     });
 
-    it('should mark notification thread as done- enterprise', async () => {
+    it('should mark notification thread as done - enterprise', async () => {
       await markNotificationThreadAsDone(
         mockThreadId,
         mockEnterpriseHostname,
@@ -202,7 +203,7 @@ describe('utils/api/client.ts', () => {
       expect(axios.defaults.headers.common).toMatchSnapshot();
     });
 
-    it('should ignore notification thread subscription- enterprise', async () => {
+    it('should ignore notification thread subscription - enterprise', async () => {
       await ignoreNotificationThreadSubscription(
         mockThreadId,
         mockEnterpriseHostname,
@@ -278,7 +279,7 @@ describe('utils/api/client.ts', () => {
     });
 
     it('should handle error', async () => {
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+      const logErrorSpy = jest.spyOn(log, 'error').mockImplementation();
 
       const apiRequestAuthMock = jest.spyOn(apiRequests, 'apiRequestAuth');
 
@@ -291,7 +292,7 @@ describe('utils/api/client.ts', () => {
         '123' as Token,
       );
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to get html url');
+      expect(logErrorSpy).toHaveBeenCalledWith('Failed to get html url');
     });
   });
 });

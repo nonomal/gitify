@@ -3,7 +3,6 @@ import type {
   AccountNotifications,
   GitifyError,
   GitifyState,
-  SettingsState,
   Status,
 } from '../types';
 import type { Notification } from '../typesGitHub';
@@ -13,8 +12,8 @@ import {
   markNotificationThreadAsRead,
   markRepositoryNotificationsAsRead,
 } from '../utils/api/client';
-import { determineFailureType } from '../utils/api/errors';
 import { getAccountUUID } from '../utils/auth/utils';
+import { isMarkAsDoneFeatureSupported } from '../utils/helpers';
 import {
   getAllNotifications,
   setTrayIconColor,
@@ -25,10 +24,6 @@ import { removeNotifications } from '../utils/remove-notifications';
 
 interface NotificationsState {
   notifications: AccountNotifications[];
-  removeNotificationFromState: (
-    settings: SettingsState,
-    notification: Notification,
-  ) => void;
   fetchNotifications: (state: GitifyState) => Promise<void>;
   markNotificationRead: (
     state: GitifyState,
@@ -51,12 +46,12 @@ interface NotificationsState {
     notification: Notification,
   ) => Promise<void>;
   status: Status;
-  errorDetails: GitifyError;
+  globalError: GitifyError;
 }
 
 export const useNotifications = (): NotificationsState => {
   const [status, setStatus] = useState<Status>('success');
-  const [errorDetails, setErrorDetails] = useState<GitifyError>();
+  const [globalError, setGlobalError] = useState<GitifyError>();
 
   const [notifications, setNotifications] = useState<AccountNotifications[]>(
     [],
@@ -65,17 +60,32 @@ export const useNotifications = (): NotificationsState => {
   const fetchNotifications = useCallback(
     async (state: GitifyState) => {
       setStatus('loading');
+      setGlobalError(null);
 
-      try {
-        const fetchedNotifications = await getAllNotifications(state);
+      const fetchedNotifications = await getAllNotifications(state);
 
-        setNotifications(fetchedNotifications);
-        triggerNativeNotifications(notifications, fetchedNotifications, state);
-        setStatus('success');
-      } catch (err) {
-        setStatus('error');
-        setErrorDetails(determineFailureType(err));
+      // Set Global Error if all accounts have the same error
+      const allAccountsHaveErrors = fetchedNotifications.every((account) => {
+        return account.error !== null;
+      });
+      let accountErrorsAreAllSame = true;
+      const accountError = fetchedNotifications[0]?.error;
+      for (const fetchedNotification of fetchedNotifications) {
+        if (accountError !== fetchedNotification.error) {
+          accountErrorsAreAllSame = false;
+          break;
+        }
       }
+
+      if (allAccountsHaveErrors) {
+        setStatus('error');
+        setGlobalError(accountErrorsAreAllSame ? accountError : null);
+        return;
+      }
+
+      setNotifications(fetchedNotifications);
+      triggerNativeNotifications(notifications, fetchedNotifications, state);
+      setStatus('success');
     },
     [notifications],
   );
@@ -112,11 +122,13 @@ export const useNotifications = (): NotificationsState => {
       setStatus('loading');
 
       try {
-        await markNotificationThreadAsDone(
-          notification.id,
-          notification.account.hostname,
-          notification.account.token,
-        );
+        if (isMarkAsDoneFeatureSupported(notification.account)) {
+          await markNotificationThreadAsDone(
+            notification.id,
+            notification.account.hostname,
+            notification.account.token,
+          );
+        }
 
         const updatedNotifications = removeNotification(
           state.settings,
@@ -154,7 +166,7 @@ export const useNotifications = (): NotificationsState => {
   );
 
   const markRepoNotificationsRead = useCallback(
-    async (_state: GitifyState, notification: Notification) => {
+    async (state: GitifyState, notification: Notification) => {
       setStatus('loading');
 
       const repoSlug = notification.repository.full_name;
@@ -166,7 +178,9 @@ export const useNotifications = (): NotificationsState => {
           hostname,
           notification.account.token,
         );
+
         const updatedNotifications = removeNotifications(
+          state.settings,
           notification,
           notifications,
         );
@@ -209,6 +223,7 @@ export const useNotifications = (): NotificationsState => {
         }
 
         const updatedNotifications = removeNotifications(
+          state.settings,
           notification,
           notifications,
         );
@@ -223,26 +238,11 @@ export const useNotifications = (): NotificationsState => {
     [notifications, markNotificationDone],
   );
 
-  const removeNotificationFromState = useCallback(
-    (settings: SettingsState, notification: Notification) => {
-      const updatedNotifications = removeNotification(
-        settings,
-        notification,
-        notifications,
-      );
-
-      setNotifications(updatedNotifications);
-      setTrayIconColor(updatedNotifications);
-    },
-    [notifications],
-  );
-
   return {
     status,
-    errorDetails,
+    globalError,
     notifications,
 
-    removeNotificationFromState,
     fetchNotifications,
     markNotificationRead,
     markNotificationDone,

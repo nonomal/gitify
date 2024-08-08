@@ -1,3 +1,4 @@
+import log from 'electron-log';
 import type { Link } from '../types';
 import type {
   CheckSuiteAttributes,
@@ -48,7 +49,7 @@ export async function getGitifySubjectDetails(
         return null;
     }
   } catch (err) {
-    console.error(
+    log.error(
       `Error occurred while fetching details for ${notification.subject.type} notification: ${notification.subject.title}`,
       err,
     );
@@ -183,6 +184,7 @@ async function getGitifySubjectForDiscussion(
   }
 
   return {
+    number: discussion.number,
     state: discussionState,
     user: discussionUser,
     comments: discussion.comments.totalCount,
@@ -226,6 +228,7 @@ async function getGitifySubjectForIssue(
   }
 
   return {
+    number: issue.number,
     state: issue.state_reason ?? issue.state,
     user: {
       login: issueCommentUser?.login ?? issue.user.login,
@@ -272,6 +275,7 @@ async function getGitifySubjectForPullRequest(
   const linkedIssues = parseLinkedIssuesFromPr(pr);
 
   return {
+    number: pr.number,
     state: prState,
     user: {
       login: prCommentUser?.login ?? pr.user.login,

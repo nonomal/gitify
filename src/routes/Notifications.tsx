@@ -8,27 +8,29 @@ import { Errors } from '../utils/constants';
 import { getNotificationCount } from '../utils/notifications';
 
 export const NotificationsRoute: FC = () => {
-  const { notifications, status, errorDetails, settings } =
+  const { notifications, status, globalError, settings } =
     useContext(AppContext);
 
   const hasMultipleAccounts = useMemo(
     () => notifications.length > 1,
     [notifications],
   );
-  const notificationsCount = useMemo(() => {
-    return getNotificationCount(notifications);
-  }, [notifications]);
+
+  const hasNoAccountErrors = useMemo(
+    () => notifications.every((account) => account.error === null),
+    [notifications],
+  );
 
   const hasNotifications = useMemo(
-    () => notificationsCount > 0,
-    [notificationsCount],
+    () => getNotificationCount(notifications) > 0,
+    [notifications],
   );
 
   if (status === 'error') {
-    return <Oops error={errorDetails ?? Errors.UNKNOWN} />;
+    return <Oops error={globalError ?? Errors.UNKNOWN} />;
   }
 
-  if (!hasNotifications) {
+  if (!hasNotifications && hasNoAccountErrors) {
     return <AllRead />;
   }
 
@@ -39,6 +41,7 @@ export const NotificationsRoute: FC = () => {
           key={getAccountUUID(accountNotifications.account)}
           account={accountNotifications.account}
           notifications={accountNotifications.notifications}
+          error={accountNotifications.error}
           showAccountHostname={
             hasMultipleAccounts || settings.showAccountHostname
           }

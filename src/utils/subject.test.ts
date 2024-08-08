@@ -30,6 +30,7 @@ const mockDiscussionAuthor: DiscussionAuthor = {
   avatar_url: 'https://avatars.githubusercontent.com/u/123456789?v=4' as Link,
   type: 'User',
 };
+import log from 'electron-log';
 
 describe('utils/subject.ts', () => {
   beforeEach(() => {
@@ -221,6 +222,7 @@ describe('utils/subject.ts', () => {
         const result = await getGitifySubjectDetails(mockNotification);
 
         expect(result).toEqual({
+          number: 123,
           state: 'ANSWERED',
           user: {
             login: mockDiscussionAuthor.login,
@@ -247,6 +249,7 @@ describe('utils/subject.ts', () => {
         const result = await getGitifySubjectDetails(mockNotification);
 
         expect(result).toEqual({
+          number: 123,
           state: 'DUPLICATE',
           user: {
             login: mockDiscussionAuthor.login,
@@ -273,6 +276,7 @@ describe('utils/subject.ts', () => {
         const result = await getGitifySubjectDetails(mockNotification);
 
         expect(result).toEqual({
+          number: 123,
           state: 'OPEN',
           user: {
             login: mockDiscussionAuthor.login,
@@ -299,6 +303,7 @@ describe('utils/subject.ts', () => {
         const result = await getGitifySubjectDetails(mockNotification);
 
         expect(result).toEqual({
+          number: 123,
           state: 'OUTDATED',
           user: {
             login: mockDiscussionAuthor.login,
@@ -325,6 +330,7 @@ describe('utils/subject.ts', () => {
         const result = await getGitifySubjectDetails(mockNotification);
 
         expect(result).toEqual({
+          number: 123,
           state: 'REOPENED',
           user: {
             login: mockDiscussionAuthor.login,
@@ -351,6 +357,7 @@ describe('utils/subject.ts', () => {
         const result = await getGitifySubjectDetails(mockNotification);
 
         expect(result).toEqual({
+          number: 123,
           state: 'RESOLVED',
           user: {
             login: mockDiscussionAuthor.login,
@@ -385,6 +392,7 @@ describe('utils/subject.ts', () => {
         const result = await getGitifySubjectDetails(mockNotification);
 
         expect(result).toEqual({
+          number: 123,
           state: 'ANSWERED',
           user: {
             login: mockDiscussionAuthor.login,
@@ -414,7 +422,12 @@ describe('utils/subject.ts', () => {
       it('open issue state', async () => {
         nock('https://api.github.com')
           .get('/repos/gitify-app/notifications-test/issues/1')
-          .reply(200, { state: 'open', user: mockAuthor, labels: [] });
+          .reply(200, {
+            number: 123,
+            state: 'open',
+            user: mockAuthor,
+            labels: [],
+          });
 
         nock('https://api.github.com')
           .get('/repos/gitify-app/notifications-test/issues/comments/302888448')
@@ -423,6 +436,7 @@ describe('utils/subject.ts', () => {
         const result = await getGitifySubjectDetails(mockNotification);
 
         expect(result).toEqual({
+          number: 123,
           state: 'open',
           user: {
             login: mockCommenter.login,
@@ -437,7 +451,12 @@ describe('utils/subject.ts', () => {
       it('closed issue state', async () => {
         nock('https://api.github.com')
           .get('/repos/gitify-app/notifications-test/issues/1')
-          .reply(200, { state: 'closed', user: mockAuthor, labels: [] });
+          .reply(200, {
+            number: 123,
+            state: 'closed',
+            user: mockAuthor,
+            labels: [],
+          });
 
         nock('https://api.github.com')
           .get('/repos/gitify-app/notifications-test/issues/comments/302888448')
@@ -446,6 +465,7 @@ describe('utils/subject.ts', () => {
         const result = await getGitifySubjectDetails(mockNotification);
 
         expect(result).toEqual({
+          number: 123,
           state: 'closed',
           user: {
             login: mockCommenter.login,
@@ -461,6 +481,7 @@ describe('utils/subject.ts', () => {
         nock('https://api.github.com')
           .get('/repos/gitify-app/notifications-test/issues/1')
           .reply(200, {
+            number: 123,
             state: 'closed',
             state_reason: 'completed',
             user: mockAuthor,
@@ -474,6 +495,7 @@ describe('utils/subject.ts', () => {
         const result = await getGitifySubjectDetails(mockNotification);
 
         expect(result).toEqual({
+          number: 123,
           state: 'completed',
           user: {
             login: mockCommenter.login,
@@ -489,6 +511,7 @@ describe('utils/subject.ts', () => {
         nock('https://api.github.com')
           .get('/repos/gitify-app/notifications-test/issues/1')
           .reply(200, {
+            number: 123,
             state: 'open',
             state_reason: 'not_planned',
             user: mockAuthor,
@@ -502,6 +525,7 @@ describe('utils/subject.ts', () => {
         const result = await getGitifySubjectDetails(mockNotification);
 
         expect(result).toEqual({
+          number: 123,
           state: 'not_planned',
           user: {
             login: mockCommenter.login,
@@ -517,6 +541,7 @@ describe('utils/subject.ts', () => {
         nock('https://api.github.com')
           .get('/repos/gitify-app/notifications-test/issues/1')
           .reply(200, {
+            number: 123,
             state: 'open',
             state_reason: 'reopened',
             user: mockAuthor,
@@ -530,6 +555,7 @@ describe('utils/subject.ts', () => {
         const result = await getGitifySubjectDetails(mockNotification);
 
         expect(result).toEqual({
+          number: 123,
           state: 'reopened',
           user: {
             login: mockCommenter.login,
@@ -547,6 +573,7 @@ describe('utils/subject.ts', () => {
         nock('https://api.github.com')
           .get('/repos/gitify-app/notifications-test/issues/1')
           .reply(200, {
+            number: 123,
             state: 'open',
             draft: false,
             merged: false,
@@ -557,6 +584,7 @@ describe('utils/subject.ts', () => {
         const result = await getGitifySubjectDetails(mockNotification);
 
         expect(result).toEqual({
+          number: 123,
           state: 'open',
           user: {
             login: mockAuthor.login,
@@ -573,6 +601,7 @@ describe('utils/subject.ts', () => {
           nock('https://api.github.com')
             .get('/repos/gitify-app/notifications-test/issues/1')
             .reply(200, {
+              number: 123,
               state: 'open',
               user: mockAuthor,
               labels: [{ name: 'enhancement' }],
@@ -587,6 +616,7 @@ describe('utils/subject.ts', () => {
           const result = await getGitifySubjectDetails(mockNotification);
 
           expect(result).toEqual({
+            number: 123,
             state: 'open',
             user: {
               login: mockCommenter.login,
@@ -602,6 +632,7 @@ describe('utils/subject.ts', () => {
           nock('https://api.github.com')
             .get('/repos/gitify-app/notifications-test/issues/1')
             .reply(200, {
+              number: 123,
               state: 'open',
               user: mockAuthor,
               labels: null,
@@ -616,6 +647,7 @@ describe('utils/subject.ts', () => {
           const result = await getGitifySubjectDetails(mockNotification);
 
           expect(result).toEqual({
+            number: 123,
             state: 'open',
             user: {
               login: mockCommenter.login,
@@ -646,6 +678,7 @@ describe('utils/subject.ts', () => {
         nock('https://api.github.com')
           .get('/repos/gitify-app/notifications-test/pulls/1')
           .reply(200, {
+            number: 123,
             state: 'closed',
             draft: false,
             merged: false,
@@ -664,6 +697,7 @@ describe('utils/subject.ts', () => {
         const result = await getGitifySubjectDetails(mockNotification);
 
         expect(result).toEqual({
+          number: 123,
           state: 'closed',
           user: {
             login: mockCommenter.login,
@@ -681,6 +715,7 @@ describe('utils/subject.ts', () => {
         nock('https://api.github.com')
           .get('/repos/gitify-app/notifications-test/pulls/1')
           .reply(200, {
+            number: 123,
             state: 'open',
             draft: true,
             merged: false,
@@ -699,6 +734,7 @@ describe('utils/subject.ts', () => {
         const result = await getGitifySubjectDetails(mockNotification);
 
         expect(result).toEqual({
+          number: 123,
           state: 'draft',
           user: {
             login: mockCommenter.login,
@@ -716,6 +752,7 @@ describe('utils/subject.ts', () => {
         nock('https://api.github.com')
           .get('/repos/gitify-app/notifications-test/pulls/1')
           .reply(200, {
+            number: 123,
             state: 'open',
             draft: false,
             merged: true,
@@ -734,6 +771,7 @@ describe('utils/subject.ts', () => {
         const result = await getGitifySubjectDetails(mockNotification);
 
         expect(result).toEqual({
+          number: 123,
           state: 'merged',
           user: {
             login: mockCommenter.login,
@@ -751,6 +789,7 @@ describe('utils/subject.ts', () => {
         nock('https://api.github.com')
           .get('/repos/gitify-app/notifications-test/pulls/1')
           .reply(200, {
+            number: 123,
             state: 'open',
             draft: false,
             merged: false,
@@ -769,6 +808,7 @@ describe('utils/subject.ts', () => {
         const result = await getGitifySubjectDetails(mockNotification);
 
         expect(result).toEqual({
+          number: 123,
           state: 'open',
           user: {
             login: mockCommenter.login,
@@ -789,6 +829,7 @@ describe('utils/subject.ts', () => {
         nock('https://api.github.com')
           .get('/repos/gitify-app/notifications-test/pulls/1')
           .reply(200, {
+            number: 123,
             state: 'open',
             draft: false,
             merged: false,
@@ -803,6 +844,7 @@ describe('utils/subject.ts', () => {
         const result = await getGitifySubjectDetails(mockNotification);
 
         expect(result).toEqual({
+          number: 123,
           state: 'open',
           user: {
             login: mockAuthor.login,
@@ -822,6 +864,7 @@ describe('utils/subject.ts', () => {
         nock('https://api.github.com')
           .get('/repos/gitify-app/notifications-test/pulls/1')
           .reply(200, {
+            number: 123,
             state: 'open',
             draft: false,
             merged: false,
@@ -836,6 +879,7 @@ describe('utils/subject.ts', () => {
         const result = await getGitifySubjectDetails(mockNotification);
 
         expect(result).toEqual({
+          number: 123,
           state: 'open',
           user: {
             login: mockAuthor.login,
@@ -912,6 +956,7 @@ describe('utils/subject.ts', () => {
           nock('https://api.github.com')
             .get('/repos/gitify-app/notifications-test/pulls/1')
             .reply(200, {
+              number: 123,
               state: 'open',
               draft: false,
               merged: false,
@@ -932,6 +977,7 @@ describe('utils/subject.ts', () => {
           const result = await getGitifySubjectDetails(mockNotification);
 
           expect(result).toEqual({
+            number: 123,
             state: 'open',
             user: {
               login: mockCommenter.login,
@@ -949,6 +995,7 @@ describe('utils/subject.ts', () => {
           nock('https://api.github.com')
             .get('/repos/gitify-app/notifications-test/pulls/1')
             .reply(200, {
+              number: 123,
               state: 'open',
               draft: false,
               merged: false,
@@ -969,6 +1016,7 @@ describe('utils/subject.ts', () => {
           const result = await getGitifySubjectDetails(mockNotification);
 
           expect(result).toEqual({
+            number: 123,
             state: 'open',
             user: {
               login: mockCommenter.login,
@@ -1103,9 +1151,7 @@ describe('utils/subject.ts', () => {
 
     describe('Error', () => {
       it('catches error and logs message', async () => {
-        const consoleErrorSpy = jest
-          .spyOn(console, 'error')
-          .mockImplementation();
+        const logErrorSpy = jest.spyOn(log, 'error').mockImplementation();
 
         const mockError = new Error('Test error');
         const mockNotification = partialMockNotification({
@@ -1120,7 +1166,7 @@ describe('utils/subject.ts', () => {
 
         await getGitifySubjectDetails(mockNotification);
 
-        expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect(logErrorSpy).toHaveBeenCalledWith(
           'Error occurred while fetching details for Issue notification: This issue will throw an error',
           mockError,
         );
@@ -1293,6 +1339,7 @@ function mockDiscussionNode(
   isAnswered: boolean,
 ): Discussion {
   return {
+    number: 123,
     title: 'This is a mock discussion',
     url: 'https://github.com/gitify-app/notifications-test/discussions/1' as Link,
     stateReason: state,

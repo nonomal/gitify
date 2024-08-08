@@ -1,4 +1,6 @@
-import { type FC, useContext } from 'react';
+import { GearIcon } from '@primer/octicons-react';
+import { ipcRenderer } from 'electron';
+import { type FC, useContext, useEffect, useState } from 'react';
 import { Header } from '../components/Header';
 import { AppearanceSettings } from '../components/settings/AppearanceSettings';
 import { NotificationSettings } from '../components/settings/NotificationSettings';
@@ -8,9 +10,19 @@ import { AppContext } from '../context/App';
 
 export const SettingsRoute: FC = () => {
   const { resetSettings } = useContext(AppContext);
+  const [isUpdateAvailable, setIsUpdateAvailable] = useState(false);
+
+  useEffect(() => {
+    ipcRenderer.on('gitify:auto-updater', (_, isUpdateAvailable: boolean) => {
+      setIsUpdateAvailable(isUpdateAvailable);
+    });
+  }, []);
+
   return (
     <div className="flex h-screen flex-col" data-testid="settings">
-      <Header fetchOnBack>Settings</Header>
+      <Header fetchOnBack icon={GearIcon}>
+        Settings
+      </Header>
 
       <div className="flex flex-col flex-grow overflow-x-auto px-8 gap-3">
         <AppearanceSettings />
@@ -28,7 +40,7 @@ export const SettingsRoute: FC = () => {
         </button>
       </div>
 
-      <SettingsFooter />
+      <SettingsFooter isUpdateAvailable={isUpdateAvailable} />
     </div>
   );
 };

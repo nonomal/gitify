@@ -4,11 +4,34 @@ import { mockAuth, mockSettings } from '../../__mocks__/state-mocks';
 import { AppContext } from '../../context/App';
 import { SystemSettings } from './SystemSettings';
 
-describe('routes/components/SystemSettings.tsx', () => {
+describe('routes/components/settings/SystemSettings.tsx', () => {
   const updateSetting = jest.fn();
 
   afterEach(() => {
     jest.clearAllMocks();
+  });
+
+  it('should change the open links radio group', async () => {
+    await act(async () => {
+      render(
+        <AppContext.Provider
+          value={{
+            auth: mockAuth,
+            settings: mockSettings,
+            updateSetting,
+          }}
+        >
+          <MemoryRouter>
+            <SystemSettings />
+          </MemoryRouter>
+        </AppContext.Provider>,
+      );
+    });
+
+    fireEvent.click(screen.getByLabelText('Background'));
+
+    expect(updateSetting).toHaveBeenCalledTimes(1);
+    expect(updateSetting).toHaveBeenCalledWith('openLinks', 'BACKGROUND');
   });
 
   it('should toggle the keyboardShortcut checkbox', async () => {

@@ -5,7 +5,7 @@ import { AppContext } from '../../context/App';
 import * as comms from '../../utils/comms';
 import { NotificationSettings } from './NotificationSettings';
 
-describe('routes/components/NotificationSettings.tsx', () => {
+describe('routes/components/settings/NotificationSettings.tsx', () => {
   const updateSetting = jest.fn();
 
   afterEach(() => {
@@ -60,7 +60,9 @@ describe('routes/components/NotificationSettings.tsx', () => {
   });
 
   it('should open official docs for showOnlyParticipating tooltip', async () => {
-    const openExternalLinkMock = jest.spyOn(comms, 'openExternalLink');
+    const openExternalLinkMock = jest
+      .spyOn(comms, 'openExternalLink')
+      .mockImplementation();
 
     await act(async () => {
       render(
