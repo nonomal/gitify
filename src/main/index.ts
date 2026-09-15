@@ -1,0 +1,74 @@
+import { app } from 'electron';
+import log from 'electron-log';
+import { menubar } from 'electron-menubar';
+
+import { Paths, WindowConfig } from './config';
+import {
+  registerAppHandlers,
+  registerStorageHandlers,
+  registerSystemHandlers,
+  registerTrayHandlers,
+  registerUpdaterHandlers,
+} from './handlers';
+import { TrayIcons } from './icons';
+import {
+  configureWindowEvents,
+  handleProtocolURL,
+  initializeAppLifecycle,
+  onFirstRunMaybe,
+} from './lifecycle';
+import MenuBuilder from './menu';
+import { applyOzonePlatform } from './ozone';
+import AppUpdater from './updater';
+import { isDevMode } from './utils';
+
+// Runs at module load: the Ozone platform is read during app startup, so this
+// has to happen before `app.whenReady()` below.
+applyOzonePlatform();
+
+log.initialize();
+
+if (!app.isPackaged) {
+  log.transports.file.fileName = 'main.dev.log';
+}
+
+const mb = menubar({
+  icon: TrayIcons.idle,
+  index: Paths.indexHtml,
+  browserWindow: WindowConfig,
+  preloadWindow: true,
+  showDockIcon: false, // Hide the app from the macOS dock
+  hideOnClose: true, // Keep renderer state across WM close; Wayland-safe.
+  escapeToHide: true, // Hide the window when Escape is pressed.
+});
+
+const menuBuilder = new MenuBuilder(mb);
+const contextMenu = menuBuilder.buildMenu();
+
+// Register your app as the handler for a custom protocol
+const protocol = isDevMode() ? 'gitify-dev' : 'gitify';
+app.setAsDefaultProtocolClient(protocol);
+
+const appUpdater = new AppUpdater(mb, menuBuilder);
+
+app.whenReady().then(async () => {
+  await onFirstRunMaybe();
+
+  initializeAppLifecycle(mb, contextMenu, protocol);
+
+  // Configure window event handlers (Escape key, DevTools resize)
+  configureWindowEvents(mb, menuBuilder);
+
+  // Register IPC handlers for various channels
+  registerTrayHandlers(mb);
+  registerSystemHandlers(mb);
+  registerStorageHandlers();
+  registerAppHandlers(mb);
+  registerUpdaterHandlers(appUpdater);
+});
+
+// Handle gitify:// custom protocol URL events for OAuth 2.0 callback
+app.on('open-url', (event, url) => {
+  event.preventDefault();
+  handleProtocolURL(mb, url, protocol);
+});

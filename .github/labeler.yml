@@ -1,0 +1,80 @@
+version: v1
+
+labels:
+  - label: 'bug'
+    sync: true
+    matcher:
+      title: '^fix(\((?!deps)[\w/]+\))?: .*'
+
+  - label: 'build'
+    sync: true
+    matcher:
+      title: '^(ci|build)(\([\w/]+\))?: .*'
+
+  - label: 'chore'
+    sync: true
+    matcher:
+      title: '^chore(\((?!deps)[\w/]+\))?: (?!release ).*'
+
+  - label: 'dependency'
+    sync: true
+    matcher:
+      branch: '^renovate/.*'
+      files: ['pnpm-lock.yaml']
+
+  - label: 'forge:github'
+    sync: true
+    matcher:
+      title: '^\w+\((forge\/)?github\): .*'
+
+  - label: 'forge:bitbucket'
+    sync: true
+    matcher:
+      title: '^\w+\((forge\/)?bitbucket\): .*'
+
+  - label: 'forge:gitea'
+    sync: true
+    matcher:
+      title: '^\w+\((forge\/)?(gitea|codeberg|forgejo)\): .*'
+
+  - label: 'documentation'
+    sync: true
+    matcher:
+      title: '^docs(\([\w/]+\))?: .*'
+
+  - label: 'enhancement'
+    sync: true
+    matcher:
+      title: '^feat(\([\w/]+\))?: .*'
+
+  - label: 'refactor'
+    sync: true
+    matcher:
+      title: '^(refactor|perf)(\([\w/]+\))?: .*'
+
+  - label: 'release'
+    sync: true
+    matcher:
+      title: '^chore\(main\): release .*'
+
+  - label: 'test'
+    sync: true
+    matcher:
+      title: '^test(\([\w/]+\))?: .*'
+
+checks:
+  - context: 'Semantic Pull Request'
+    description:
+      success: Ready for review & merge
+      failure: Missing semantic label for merge
+    labels:
+      any:
+        - enhancement
+        - bug
+        - refactor
+        - documentation
+        - test
+        - build
+        - chore
+        - dependency
+        - release

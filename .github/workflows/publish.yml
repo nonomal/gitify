@@ -1,0 +1,165 @@
+name: Publish
+
+on:
+  workflow_call:
+    inputs:
+      tag_name:
+        description: The draft release tag to attach artifacts to and publish (e.g. v7.1.0)
+        required: true
+        type: string
+    secrets:
+      OAUTH_CLIENT_ID:
+        required: true
+      # Signing certificates
+      CSC_LINK:
+        required: true
+      WIN_CSC_LINK:
+        required: true
+      CSC_KEY_PASSWORD:
+        required: true
+      WIN_CSC_KEY_PASSWORD:
+        required: true
+      # macOS specific
+      APPLE_ID_USERNAME:
+        required: true
+      APPLE_ID_PASSWORD:
+        required: true
+      APPLE_ID_TEAM_ID:
+        required: true
+  workflow_dispatch: # For manually running release process to verify code-signing of artifacts
+    inputs:
+      tag_name:
+        description: The draft release tag to publish (leave blank for a signing-only dry run)
+        required: false
+        type: string
+
+permissions: {}
+
+jobs:
+  release:
+    name: Publish ${{ matrix.platform }} [electron-builder]
+    permissions:
+      contents: write
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            platform: macOS
+            package-cmd: vp run package:macos --publish onTagOrDraft
+            artifact-name: Gitify-release-mac
+            use-apple-notarization: true
+          - os: windows-latest
+            platform: Windows
+            package-cmd: vp run package:win --publish onTagOrDraft
+            artifact-name: Gitify-release-win
+            use-apple-notarization: false
+          - os: ubuntu-latest
+            platform: Linux
+            package-cmd: vp run package:linux --publish onTagOrDraft
+            artifact-name: Gitify-release-linux
+            use-apple-notarization: false
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@9fd26ff49f9b5e6276c2b493da4454ad4527f7f4 # v1.20.0
+        with:
+          cache: true
+          node-version-file: '.nvmrc'
+
+      - name: Build application
+        run: vp run build
+        env:
+          OAUTH_CLIENT_ID: ${{ secrets.OAUTH_CLIENT_ID }}
+
+      - name: Package and publish for ${{ matrix.platform }}
+        run: ${{ matrix.package-cmd }}
+        env:
+          # Signing certificates - important to use the correct cert per platform
+          CSC_LINK: ${{ matrix.platform == 'macOS' && secrets.CSC_LINK || (matrix.platform == 'windows' && secrets.WIN_CSC_LINK || '') }}
+          CSC_KEY_PASSWORD: ${{ matrix.platform == 'macOS' && secrets.CSC_KEY_PASSWORD || (matrix.platform == 'windows' && secrets.WIN_CSC_KEY_PASSWORD || '') }}
+          # macOS specific
+          APPLE_ID_USERNAME: ${{ secrets.APPLE_ID_USERNAME }}
+          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+          APPLE_ID_TEAM_ID: ${{ secrets.APPLE_ID_TEAM_ID }}
+          NOTARIZE: ${{ matrix.use-apple-notarization }}
+          # General
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ matrix.artifact-name }}
+          path: |
+            dist/*
+            !dist/*/
+          overwrite: true
+
+  publish-release:
+    name: Publish release
+    needs: release
+    if: ${{ inputs.tag_name != '' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # release-please creates the release as a draft so electron-builder can attach
+      # signed artifacts to it. Now that every platform has uploaded, flip it to
+      # published: this materialises the git tag and fires the `release: published`
+      # event that redeploys the website.
+      #
+      # We resolve the release by id rather than `gh release edit <tag>`: a draft
+      # has no git tag yet, so the tag lookup fails with HTTP 422. Patching the
+      # draft flag by id is also idempotent, so re-running an already-published
+      # release is a no-op.
+      - name: Publish draft release
+        run: |
+          # The draft is the newest release, so a single page comfortably covers it.
+          release=$(gh api "repos/${REPO}/releases?per_page=100" \
+            --jq 'map(select(.tag_name == env.TAG_NAME)) | .[0] // empty')
+          release_id=$(printf '%s' "${release}" | jq -r '.id // empty')
+          if [ -z "${release_id}" ]; then
+            echo "::error::No release found for tag ${TAG_NAME}"
+            exit 1
+          fi
+
+          # Credit contributors in the release body. GitHub's generated notes
+          # attribute every PR to its author; the @mentions also drive the
+          # contributor avatar strip on the release page. The tag does not
+          # exist yet, so generate against the draft's target commitish.
+          target=$(printf '%s' "${release}" | jq -r '.target_commitish')
+          notes=$(gh api --method POST "repos/${REPO}/releases/generate-notes" \
+            -f tag_name="${TAG_NAME}" -f target_commitish="${target}" --jq '.body' || true)
+          contributors=$(printf '%s\n' "${notes}" | grep -oE 'by @[A-Za-z0-9-]+' | sed 's/^by //' \
+            | sort -u | grep -viE '^@(github-actions|renovate|dependabot)$' | sed 's/^/* /' || true)
+          new_contributors=$(printf '%s\n' "${notes}" | sed -n '/^## New Contributors/,/^$/p')
+
+          # Idempotency: a re-run of an already-published release must not
+          # append the contributor sections a second time.
+          body=$(printf '%s' "${release}" | jq -r '.body')
+          case "${body}" in
+            *'### 🫶 Contributors'*) contributors='' new_contributors='' ;;
+          esac
+
+          {
+            printf '%s\n' "${body}"
+            if [ -n "${contributors}" ]; then
+              printf '\n### 🫶 Contributors\n\n%s\n' "${contributors}"
+            fi
+            if [ -n "${new_contributors}" ]; then
+              printf '\n%s\n' "${new_contributors}"
+            fi
+          } > /tmp/release-body.md
+
+          gh api --method PATCH "repos/${REPO}/releases/${release_id}" \
+            -F draft=false -F 'body=@/tmp/release-body.md' > /dev/null
+          echo "Published ${TAG_NAME} (release id ${release_id})"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ inputs.tag_name }}
+          REPO: ${{ github.repository }}

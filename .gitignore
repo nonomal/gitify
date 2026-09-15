@@ -1,25 +1,35 @@
-# Mac Files
-.DS_Store
-
 # Build files
 dist/
 build/
+# vite-plugin-electron stub at project root
+/index.html
+
+# TypeScript incremental compilation cache
+*.tsbuildinfo
+
+# Environment variables
+.env
 
 # Dependency directories
 node_modules/
+.pnpm-store/
+
+# Generated GraphQL Files
+schema.graphql
 
 # Coverage directory used by tools like istanbul
 coverage
 *.lcov
 
-# Logs
-logs
-*.log
-npm-debug.log*
+# Visual regression screenshots. Only the Linux baselines CI compares against
+# are committed; anything generated on a developer's own OS would never match
+# it (font rendering differs) and must not become a baseline. Regenerate with
+# `pnpm test:visual:update`, which runs in the pinned Linux container.
+src/renderer/**/__screenshots__/**/*.png
+!src/renderer/**/__screenshots__/**/*-chromium-linux.png
 
-# Optional npm cache directory
-.npm
+# Actual/diff images written by a failing visual regression run
+.vitest-attachments/
 
-# Temporary folders
-tmp/
-temp/
+# Mac Files
+.DS_Store

@@ -1,0 +1,54 @@
+import type { FC, MouseEvent } from 'react';
+
+import { Stack } from '@primer/react';
+
+import { cn } from 'cn';
+
+import { useSettingsStore } from '../../stores';
+
+import { type GitifyNotification, Opacity, Size } from '../../types';
+
+import { isGroupByDate } from '../../utils/notifications/group';
+import { openRepository } from '../../utils/system/links';
+import { AvatarWithFallback } from '../avatars/AvatarWithFallback';
+
+export interface NotificationHeaderProps {
+  notification: GitifyNotification;
+}
+
+export const NotificationHeader: FC<NotificationHeaderProps> = ({
+  notification,
+}: NotificationHeaderProps) => {
+  const showNumber = useSettingsStore((s) => s.showNumber);
+
+  return (
+    isGroupByDate() && (
+      <div className="py-0.5">
+        <Stack align="center" direction="horizontal" gap="condensed">
+          <button
+            className="text-xs font-medium"
+            data-testid="view-repository"
+            onClick={(event: MouseEvent<HTMLElement>) => {
+              // Don't trigger onClick of parent element.
+              event.stopPropagation();
+              openRepository(notification.repository);
+            }}
+            title="Open repository ↗"
+            type="button"
+          >
+            <AvatarWithFallback
+              alt={notification.repository.fullName}
+              name={notification.repository.fullName}
+              size={Size.SMALL}
+              src={notification.repository.owner.avatarUrl}
+              userType={notification.repository.owner.type}
+            />
+          </button>
+          <div className={cn('text-xxs', Opacity.READ, !showNumber && 'hidden')}>
+            {notification.display.number}
+          </div>
+        </Stack>
+      </div>
+    )
+  );
+};

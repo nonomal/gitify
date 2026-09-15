@@ -1,0 +1,115 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`renderer/components/Oops.tsx > should render itself & its children - fallback to unknown error 1`] = `
+<div>
+  <div
+    class="h-screen prc-Stack-Stack-UQ9k6"
+    data-align="center"
+    data-component="Stack"
+    data-direction="vertical"
+    data-justify="center"
+    data-padding="spacious"
+    data-wrap="nowrap"
+  >
+    <div
+      class="prc-Stack-Stack-UQ9k6"
+      data-align="center"
+      data-component="Stack"
+      data-direction="vertical"
+      data-gap="condensed"
+      data-justify="center"
+      data-padding="none"
+      data-wrap="nowrap"
+    >
+      <div
+        class="prc-Stack-Stack-UQ9k6"
+        data-align="center"
+        data-component="Stack"
+        data-direction="vertical"
+        data-gap="spacious"
+        data-justify="start"
+        data-padding="none"
+        data-wrap="nowrap"
+      >
+        <div
+          class="text-7xl"
+        >
+          <img
+            alt="🤔"
+            class="emoji"
+            draggable="false"
+            src="/mock/images/assets/1f914.svg"
+          />
+        </div>
+        <div
+          class="text-xl font-semibold"
+        >
+          Oops! Something went wrong
+        </div>
+      </div>
+      <div
+        class="text-center"
+      >
+        Please try again later.
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`renderer/components/Oops.tsx > should render itself & its children - specified error 1`] = `
+<div>
+  <div
+    class="h-screen prc-Stack-Stack-UQ9k6"
+    data-align="center"
+    data-component="Stack"
+    data-direction="vertical"
+    data-justify="center"
+    data-padding="spacious"
+    data-wrap="nowrap"
+  >
+    <div
+      class="prc-Stack-Stack-UQ9k6"
+      data-align="center"
+      data-component="Stack"
+      data-direction="vertical"
+      data-gap="condensed"
+      data-justify="center"
+      data-padding="none"
+      data-wrap="nowrap"
+    >
+      <div
+        class="prc-Stack-Stack-UQ9k6"
+        data-align="center"
+        data-component="Stack"
+        data-direction="vertical"
+        data-gap="spacious"
+        data-justify="start"
+        data-padding="none"
+        data-wrap="nowrap"
+      >
+        <div
+          class="text-7xl"
+        >
+          <img
+            alt="🔥"
+            class="emoji"
+            draggable="false"
+            src="/mock/images/assets/1f525.svg"
+          />
+        </div>
+        <div
+          class="text-xl font-semibold"
+        >
+          Error title
+        </div>
+      </div>
+      <div
+        class="text-center"
+      >
+        Error description
+      </div>
+    </div>
+  </div>
+</div>
+`;

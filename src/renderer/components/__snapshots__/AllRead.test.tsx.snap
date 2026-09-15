@@ -1,0 +1,105 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`renderer/components/AllRead.tsx > should render itself & its children - no filters 1`] = `
+<div>
+  <div
+    class="h-screen prc-Stack-Stack-UQ9k6"
+    data-align="center"
+    data-component="Stack"
+    data-direction="vertical"
+    data-justify="center"
+    data-padding="spacious"
+    data-wrap="nowrap"
+  >
+    <div
+      class="prc-Stack-Stack-UQ9k6"
+      data-align="center"
+      data-component="Stack"
+      data-direction="vertical"
+      data-gap="condensed"
+      data-justify="center"
+      data-padding="none"
+      data-wrap="nowrap"
+    >
+      <div
+        class="prc-Stack-Stack-UQ9k6"
+        data-align="center"
+        data-component="Stack"
+        data-direction="vertical"
+        data-gap="spacious"
+        data-justify="start"
+        data-padding="none"
+        data-wrap="nowrap"
+      >
+        <div
+          class="text-7xl"
+        >
+          <img
+            alt="🎉"
+            class="emoji"
+            draggable="false"
+            src="/mock/images/assets/1f389.svg"
+          />
+        </div>
+        <div
+          class="text-xl font-semibold"
+        >
+          No new  notifications
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`renderer/components/AllRead.tsx > should render itself & its children - with filters 1`] = `
+<div>
+  <div
+    class="h-screen prc-Stack-Stack-UQ9k6"
+    data-align="center"
+    data-component="Stack"
+    data-direction="vertical"
+    data-justify="center"
+    data-padding="spacious"
+    data-wrap="nowrap"
+  >
+    <div
+      class="prc-Stack-Stack-UQ9k6"
+      data-align="center"
+      data-component="Stack"
+      data-direction="vertical"
+      data-gap="condensed"
+      data-justify="center"
+      data-padding="none"
+      data-wrap="nowrap"
+    >
+      <div
+        class="prc-Stack-Stack-UQ9k6"
+        data-align="center"
+        data-component="Stack"
+        data-direction="vertical"
+        data-gap="spacious"
+        data-justify="start"
+        data-padding="none"
+        data-wrap="nowrap"
+      >
+        <div
+          class="text-7xl"
+        >
+          <img
+            alt="🎉"
+            class="emoji"
+            draggable="false"
+            src="/mock/images/assets/1f389.svg"
+          />
+        </div>
+        <div
+          class="text-xl font-semibold"
+        >
+          No new filtered  notifications
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;

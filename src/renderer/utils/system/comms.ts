@@ -1,0 +1,176 @@
+import type { ISafeStorageDecryptResult } from '../../../shared/events';
+
+import { useSettingsStore } from '../../stores';
+
+import { type Link, OpenPreference } from '../../types';
+
+/**
+ * Open a URL in the user's default browser.
+ *
+ * Only opens `https://` URLs. The `openLinks` setting controls whether
+ * the link opens in the foreground or background.
+ *
+ * @param url - The URL to open.
+ */
+export function openExternalLink(url: Link): void {
+  const openPreference = useSettingsStore.getState().openLinks;
+
+  if (url.toLowerCase().startsWith('https://')) {
+    window.gitify.openExternalLink(url, openPreference === OpenPreference.FOREGROUND);
+  }
+}
+
+/**
+ * Returns the current application version string.
+ *
+ * @returns Promise resolving to the app version (e.g. `"6.18.0"`).
+ */
+export async function getAppVersion(): Promise<string> {
+  return await window.gitify.app.version();
+}
+
+/**
+ * Encrypts a plaintext string using the native Electron encryption bridge.
+ *
+ * @param value - The plaintext string to encrypt.
+ * @returns Promise resolving to the encrypted string.
+ */
+export async function encryptValue(value: string): Promise<string> {
+  return await window.gitify.encryptValue(value);
+}
+
+/**
+ * Decrypts a previously encrypted string using the native Electron decryption bridge.
+ *
+ * Resolves to the decrypted token. When the OS keychain rotated keys during
+ * decryption, `reEncryptedToken` is also set so callers can persist the new
+ * ciphertext alongside or in place of the original.
+ *
+ * @param value - The encrypted string to decrypt.
+ */
+export async function decryptValue(value: string): Promise<ISafeStorageDecryptResult> {
+  return await window.gitify.decryptValue(value);
+}
+
+/**
+ * Quit the application.
+ */
+export function quitApp(): void {
+  window.gitify.app.quit();
+}
+
+/**
+ * Show the main application window.
+ */
+export function showWindow(): void {
+  window.gitify.app.show();
+}
+
+/**
+ * Hide the main application window.
+ */
+export function hideWindow(): void {
+  window.gitify.app.hide();
+}
+
+/**
+ * Enables or disables auto-launch of the application on system startup.
+ *
+ * @param value - `true` to enable auto-launch, `false` to disable.
+ */
+export function setAutoLaunch(value: boolean): void {
+  window.gitify.setAutoLaunch(value);
+}
+
+/**
+ * Enables or disables keeping the window open when it loses focus.
+ *
+ * @param value - `true` to keep the window open on blur, `false` to hide.
+ */
+export function setKeepWindowOnBlur(value: boolean): void {
+  window.gitify.setKeepWindowOnBlur(value);
+}
+
+/**
+ * Enables or suppresses automatic update notifications.
+ *
+ * @param value - `true` to show update notifications, `false` to suppress them.
+ */
+export function setShowUpdateNotifications(value: boolean): void {
+  window.gitify.setShowUpdateNotifications(value);
+}
+
+/**
+ * Persist whether Linux should run under the X11 backend.
+ *
+ * The Ozone platform is fixed while the app starts, so this only takes effect
+ * on the next launch.
+ *
+ * @param value - `true` to force X11/XWayland, `false` to let Electron pick.
+ */
+export function setUseX11Backend(value: boolean): void {
+  window.gitify.setUseX11Backend(value);
+}
+
+/**
+ * Switch the tray icon to an alternate idle icon variant.
+ *
+ * @param value - `true` to use the alternate idle icon, `false` for the default.
+ */
+export function setUseAlternateIdleIcon(value: boolean): void {
+  window.gitify.tray.useAlternateIdleIcon(value);
+}
+
+/**
+ * Switch the tray icon to an "active" variant when there are unread notifications.
+ *
+ * @param value - `true` to use the unread-active icon, `false` for the default.
+ */
+export function setUseUnreadActiveIcon(value: boolean): void {
+  window.gitify.tray.useUnreadActiveIcon(value);
+}
+
+/**
+ * Apply the global keyboard shortcut for toggling the app window.
+ *
+ * @param payload - Whether the shortcut is enabled and the Electron accelerator string.
+ */
+export async function applyKeyboardShortcut(payload: {
+  enabled: boolean;
+  accelerator: string;
+}): Promise<{ success: boolean }> {
+  return await window.gitify.applyKeyboardShortcut({
+    enabled: payload.enabled,
+    keyboardShortcut: payload.accelerator,
+  });
+}
+
+/**
+ * Updates the tray icon color based on the number of unread notifications.
+ *
+ * Passing a negative number will set the error state color.
+ *
+ * @param notificationsLength The number of unread notifications
+ * @param isOnline Whether the application is currently online
+ */
+export function updateTrayColor(notificationsLength: number, isOnline: boolean): void {
+  window.gitify.tray.updateColor(notificationsLength, isOnline);
+}
+
+/**
+ * Updates the tray icon title.
+ *
+ * @param title The title to set on the tray icon
+ */
+export function updateTrayTitle(title: string): void {
+  window.gitify.tray.updateTitle(title);
+}
+
+/**
+ * Copies the specified text to the system clipboard.
+ *
+ * @param text - The text to copy to the clipboard.
+ */
+export async function copyToClipboard(text: string): Promise<void> {
+  await navigator.clipboard.writeText(text);
+}

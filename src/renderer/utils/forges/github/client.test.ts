@@ -1,0 +1,543 @@
+import type { ExecutionResult } from 'graphql';
+
+import {
+  mockGitHubCloudAccount,
+  mockGitHubEnterpriseServerAccount,
+} from '../../../__mocks__/account-mocks';
+import {
+  mockGitHubCloudGitifyNotifications,
+  mockPartialGitifyNotification,
+} from '../../../__mocks__/notifications-mocks';
+
+import { Constants } from '../../../constants';
+
+import { useSettingsStore } from '../../../stores';
+
+import type { Link } from '../../../types';
+
+import {
+  clearServerPollIntervals,
+  computeRefetchIntervalMs,
+} from '../../notifications/pollInterval';
+import {
+  fetchAuthenticatedUserDetails,
+  fetchDiscussionByNumber,
+  fetchIssueByNumber,
+  fetchNotificationDetailsForList,
+  fetchPullByNumber,
+  getCommit,
+  getCommitComment,
+  getRelease,
+  ignoreNotificationThreadSubscription,
+  listNotificationsForAuthenticatedUser,
+  markNotificationThreadAsDone,
+  markNotificationThreadAsRead,
+} from './client';
+import {
+  FetchIssueByNumberDocument,
+  type FetchDiscussionByNumberQuery,
+  type FetchIssueByNumberQuery,
+  type FetchPullRequestByNumberQuery,
+} from './graphql/generated/graphql';
+import type { OctokitClient } from './octokit';
+import * as octokitModule from './octokit';
+import * as apiRequests from './request';
+
+vi.mock('./request', async () => {
+  const actual = await vi.importActual<typeof import('./request')>('./request');
+  return {
+    ...actual,
+    performGraphQLRequest: vi.fn(),
+    performGraphQLRequestString: vi.fn(),
+  };
+});
+
+const mockThreadId = '1234';
+
+describe('renderer/utils/forges/github/client.ts', () => {
+  const mockOctokit = {
+    rest: {
+      activity: {
+        listNotificationsForAuthenticatedUser: vi.fn(),
+        markThreadAsRead: vi.fn(),
+        markThreadAsDone: vi.fn(),
+        setThreadSubscription: vi.fn(),
+      },
+      users: {
+        getAuthenticated: vi.fn(),
+      },
+    },
+    paginate: vi.fn(),
+    request: vi.fn(),
+  };
+
+  const createOctokitClientSpy = vi.spyOn(octokitModule, 'createOctokitClient');
+  const createOctokitClientUncachedSpy = vi.spyOn(octokitModule, 'createOctokitClientUncached');
+
+  beforeEach(() => {
+    clearServerPollIntervals();
+
+    vi.mocked(apiRequests.performGraphQLRequest).mockReset();
+    vi.mocked(apiRequests.performGraphQLRequestString).mockReset();
+
+    // Mock createOctokitClient to return our mock
+    createOctokitClientSpy.mockResolvedValue(mockOctokit as unknown as OctokitClient);
+    createOctokitClientUncachedSpy.mockResolvedValue(mockOctokit as unknown as OctokitClient);
+
+    // Mock Octokit REST method
+    mockOctokit.rest.activity.listNotificationsForAuthenticatedUser.mockResolvedValue({
+      data: [],
+      status: 200,
+      headers: {},
+    });
+
+    // Mock paginate
+    mockOctokit.paginate.mockResolvedValue([]);
+
+    // Mock generic request used by followUrl/getHtmlUrl
+    mockOctokit.request.mockResolvedValue({
+      data: {},
+      status: 200,
+      headers: {},
+    });
+
+    mockOctokit.rest.users.getAuthenticated.mockResolvedValue({
+      data: {},
+      status: 200,
+      headers: {},
+    });
+
+    // Mock other activity endpoints used by client
+    mockOctokit.rest.activity.markThreadAsRead.mockResolvedValue({
+      data: {},
+      status: 200,
+      headers: {},
+    });
+    mockOctokit.rest.activity.markThreadAsDone.mockResolvedValue({
+      data: {},
+      status: 200,
+      headers: {},
+    });
+    mockOctokit.rest.activity.setThreadSubscription.mockResolvedValue({
+      data: {},
+      status: 200,
+      headers: {},
+    });
+  });
+
+  it('fetchAuthenticatedUserDetails - should fetch authenticated user', async () => {
+    await fetchAuthenticatedUserDetails(mockGitHubCloudAccount);
+
+    expect(createOctokitClientUncachedSpy).toHaveBeenCalledWith(mockGitHubCloudAccount, 'rest');
+    expect(mockOctokit.rest.users.getAuthenticated).toHaveBeenCalled();
+  });
+
+  describe('listNotificationsForAuthenticatedUser', () => {
+    it('should list only participating notifications for user', async () => {
+      useSettingsStore.setState({
+        participating: true,
+        fetchReadNotifications: false,
+        fetchAllNotifications: false,
+      });
+
+      await listNotificationsForAuthenticatedUser(mockGitHubCloudAccount);
+
+      expect(createOctokitClientSpy).toHaveBeenCalledWith(mockGitHubCloudAccount, 'rest');
+      expect(mockOctokit.rest.activity.listNotificationsForAuthenticatedUser).toHaveBeenCalledWith({
+        participating: true,
+        all: false,
+        per_page: 100,
+        headers: {
+          'Cache-Control': 'no-cache',
+        },
+      });
+    });
+
+    it('should list participating and watching notifications for user', async () => {
+      useSettingsStore.setState({
+        participating: false,
+        fetchReadNotifications: false,
+        fetchAllNotifications: false,
+      });
+
+      await listNotificationsForAuthenticatedUser(mockGitHubCloudAccount);
+
+      expect(createOctokitClientSpy).toHaveBeenCalledWith(mockGitHubCloudAccount, 'rest');
+      expect(mockOctokit.rest.activity.listNotificationsForAuthenticatedUser).toHaveBeenCalledWith({
+        participating: false,
+        all: false,
+        per_page: 100,
+        headers: {
+          'Cache-Control': 'no-cache',
+        },
+      });
+    });
+
+    it('should list read and done notifications for user', async () => {
+      useSettingsStore.setState({
+        participating: false,
+        fetchReadNotifications: true,
+        fetchAllNotifications: false,
+      });
+
+      await listNotificationsForAuthenticatedUser(mockGitHubCloudAccount);
+
+      expect(createOctokitClientSpy).toHaveBeenCalledWith(mockGitHubCloudAccount, 'rest');
+      expect(mockOctokit.rest.activity.listNotificationsForAuthenticatedUser).toHaveBeenCalledWith({
+        participating: false,
+        all: true,
+        per_page: 100,
+        headers: {
+          'Cache-Control': 'no-cache',
+        },
+      });
+    });
+
+    it('should unpaginate notifications list for user', async () => {
+      useSettingsStore.setState({
+        participating: false,
+        fetchReadNotifications: false,
+        fetchAllNotifications: true,
+      });
+
+      await listNotificationsForAuthenticatedUser(mockGitHubCloudAccount);
+
+      expect(createOctokitClientSpy).toHaveBeenCalledWith(mockGitHubCloudAccount, 'rest');
+      expect(mockOctokit.paginate).toHaveBeenCalledWith(
+        mockOctokit.rest.activity.listNotificationsForAuthenticatedUser,
+        {
+          participating: false,
+          all: false,
+          per_page: 100,
+          headers: {
+            'Cache-Control': 'no-cache',
+          },
+        },
+        expect.any(Function),
+      );
+    });
+
+    it('should capture the X-Poll-Interval header for the account', async () => {
+      useSettingsStore.setState({
+        participating: false,
+        fetchReadNotifications: false,
+        fetchAllNotifications: false,
+      });
+
+      mockOctokit.rest.activity.listNotificationsForAuthenticatedUser.mockResolvedValue({
+        data: [],
+        status: 200,
+        headers: { 'x-poll-interval': '75' },
+      });
+
+      await listNotificationsForAuthenticatedUser(mockGitHubCloudAccount);
+
+      expect(computeRefetchIntervalMs(0, [mockGitHubCloudAccount])).toBe(75000);
+    });
+
+    it('should capture the X-Poll-Interval header when paginating', async () => {
+      useSettingsStore.setState({
+        participating: false,
+        fetchReadNotifications: false,
+        fetchAllNotifications: true,
+      });
+
+      mockOctokit.paginate.mockImplementation((_endpoint, _parameters, mapFn) =>
+        Promise.resolve(mapFn({ data: [], headers: { 'x-poll-interval': '120' } })),
+      );
+
+      await listNotificationsForAuthenticatedUser(mockGitHubCloudAccount);
+
+      expect(computeRefetchIntervalMs(0, [mockGitHubCloudAccount])).toBe(120000);
+    });
+  });
+
+  it('markNotificationThreadAsRead - should mark notification thread as read', async () => {
+    await markNotificationThreadAsRead(mockGitHubCloudAccount, mockThreadId);
+
+    expect(createOctokitClientSpy).toHaveBeenCalledWith(mockGitHubCloudAccount, 'rest');
+    expect(mockOctokit.rest.activity.markThreadAsRead).toHaveBeenCalledWith({
+      thread_id: Number(mockThreadId),
+    });
+  });
+
+  it('markNotificationThreadAsDone - should mark notification thread as done', async () => {
+    await markNotificationThreadAsDone(mockGitHubCloudAccount, mockThreadId);
+
+    expect(createOctokitClientSpy).toHaveBeenCalledWith(mockGitHubCloudAccount, 'rest');
+    expect(mockOctokit.rest.activity.markThreadAsDone).toHaveBeenCalledWith({
+      thread_id: Number(mockThreadId),
+    });
+  });
+
+  it('ignoreNotificationThreadSubscription - should ignore notification thread subscription', async () => {
+    await ignoreNotificationThreadSubscription(mockGitHubCloudAccount, mockThreadId);
+
+    expect(createOctokitClientSpy).toHaveBeenCalledWith(mockGitHubCloudAccount, 'rest');
+    expect(mockOctokit.rest.activity.setThreadSubscription).toHaveBeenCalledWith({
+      thread_id: Number(mockThreadId),
+      ignored: true,
+    });
+  });
+
+  it('getCommit - should fetch commit details', async () => {
+    const commitUrl = 'https://api.github.com/repos/gitify-app/gitify/commits/abc123' as Link;
+
+    await getCommit(mockGitHubCloudAccount, commitUrl);
+
+    expect(createOctokitClientSpy).toHaveBeenCalledWith(mockGitHubCloudAccount, 'rest');
+    expect(mockOctokit.request).toHaveBeenCalledWith('GET {+url}', {
+      url: commitUrl,
+    });
+  });
+
+  it('getCommitComment - should fetch commit comment details', async () => {
+    const commentUrl = 'https://api.github.com/repos/gitify-app/gitify/comments/456' as Link;
+
+    await getCommitComment(mockGitHubCloudAccount, commentUrl);
+
+    expect(createOctokitClientSpy).toHaveBeenCalledWith(mockGitHubCloudAccount, 'rest');
+    expect(mockOctokit.request).toHaveBeenCalledWith('GET {+url}', {
+      url: commentUrl,
+    });
+  });
+
+  it('getRelease - should fetch release details', async () => {
+    const releaseUrl = 'https://api.github.com/repos/gitify-app/gitify/releases/789' as Link;
+
+    await getRelease(mockGitHubCloudAccount, releaseUrl);
+
+    expect(createOctokitClientSpy).toHaveBeenCalledWith(mockGitHubCloudAccount, 'rest');
+    expect(mockOctokit.request).toHaveBeenCalledWith('GET {+url}', {
+      url: releaseUrl,
+    });
+  });
+
+  it('fetchDiscussionByNumber calls performGraphQLRequestString with sanitized query', async () => {
+    const performGraphQLRequestStringSpy = vi.mocked(apiRequests.performGraphQLRequestString);
+
+    const mockNotification = mockPartialGitifyNotification({
+      title: 'Some discussion',
+      url: 'https://api.github.com/repos/gitify-app/gitify/discussion/123' as Link,
+      type: 'Discussion',
+    });
+
+    performGraphQLRequestStringSpy.mockResolvedValue(
+      {} as ExecutionResult<FetchDiscussionByNumberQuery>,
+    );
+
+    await fetchDiscussionByNumber(mockNotification);
+
+    const [account, query, variables] = performGraphQLRequestStringSpy.mock.calls[0];
+    expect(account).toBe(mockNotification.account);
+    expect(query).toContain('isAnswered');
+    expect(query).not.toContain('@gated');
+    expect(query).toContain('query FetchDiscussionByNumber');
+    expect(variables).toEqual({
+      owner: mockNotification.repository.owner.login,
+      name: mockNotification.repository.name,
+      number: 123,
+      firstLabels: Constants.GRAPHQL_ARGS.FIRST_LABELS,
+      lastThreadedComments: Constants.GRAPHQL_ARGS.LAST_THREADED_COMMENTS,
+      lastReplies: Constants.GRAPHQL_ARGS.LAST_REPLIES,
+    });
+  });
+
+  it('fetchDiscussionByNumber strips isAnswered for GitHub Enterprise Server accounts', async () => {
+    const performGraphQLRequestStringSpy = vi.mocked(apiRequests.performGraphQLRequestString);
+
+    const mockNotification = mockPartialGitifyNotification({
+      title: 'Some discussion',
+      url: 'https://github.gitify.io/api/v3/repos/gitify-app/gitify/discussion/123' as Link,
+      type: 'Discussion',
+    });
+    mockNotification.account = mockGitHubEnterpriseServerAccount;
+
+    performGraphQLRequestStringSpy.mockResolvedValue(
+      {} as ExecutionResult<FetchDiscussionByNumberQuery>,
+    );
+
+    await fetchDiscussionByNumber(mockNotification);
+
+    const [account, query] = performGraphQLRequestStringSpy.mock.calls[0];
+    expect(account).toBe(mockGitHubEnterpriseServerAccount);
+    expect(query).not.toContain('isAnswered');
+    expect(query).not.toContain('@gated');
+  });
+
+  it('fetchIssueByNumber calls performGraphQLRequest with correct args', async () => {
+    const performGraphQLRequestSpy = vi.mocked(apiRequests.performGraphQLRequest);
+
+    const mockNotification = mockPartialGitifyNotification({
+      title: 'Some issue',
+      url: 'https://api.github.com/repos/gitify-app/gitify/issues/123' as Link,
+      type: 'Issue',
+    });
+
+    performGraphQLRequestSpy.mockResolvedValue({} as ExecutionResult<FetchIssueByNumberQuery>);
+
+    await fetchIssueByNumber(mockNotification);
+
+    expect(performGraphQLRequestSpy).toHaveBeenCalledWith(
+      mockNotification.account,
+      FetchIssueByNumberDocument,
+      {
+        owner: mockNotification.repository.owner.login,
+        name: mockNotification.repository.name,
+        number: 123,
+        firstLabels: Constants.GRAPHQL_ARGS.FIRST_LABELS,
+        lastComments: Constants.GRAPHQL_ARGS.LAST_COMMENTS,
+      },
+    );
+  });
+
+  it('fetchPullByNumber calls performGraphQLRequestString with sanitized query', async () => {
+    const performGraphQLRequestStringSpy = vi.mocked(apiRequests.performGraphQLRequestString);
+
+    const mockNotification = mockPartialGitifyNotification({
+      title: 'Some pull request',
+      url: 'https://api.github.com/repos/gitify-app/gitify/pulls/123' as Link,
+      type: 'PullRequest',
+    });
+
+    performGraphQLRequestStringSpy.mockResolvedValue(
+      {} as ExecutionResult<FetchPullRequestByNumberQuery>,
+    );
+
+    await fetchPullByNumber(mockNotification);
+
+    const [account, query, variables] = performGraphQLRequestStringSpy.mock.calls[0];
+    expect(account).toBe(mockNotification.account);
+    expect(query).toContain('stackEntry');
+    expect(query).not.toContain('@gated');
+    expect(query).toContain('query FetchPullRequestByNumber');
+    expect(variables).toEqual({
+      owner: mockNotification.repository.owner.login,
+      name: mockNotification.repository.name,
+      number: 123,
+      firstClosingIssues: Constants.GRAPHQL_ARGS.FIRST_CLOSING_ISSUES,
+      firstLabels: Constants.GRAPHQL_ARGS.FIRST_LABELS,
+      lastComments: Constants.GRAPHQL_ARGS.LAST_COMMENTS,
+      lastReviews: Constants.GRAPHQL_ARGS.LAST_REVIEWS,
+      firstReviewThreads: Constants.GRAPHQL_ARGS.FIRST_REVIEW_THREADS,
+    });
+  });
+
+  it('fetchPullByNumber strips stackEntry for GitHub Enterprise Server accounts', async () => {
+    const performGraphQLRequestStringSpy = vi.mocked(apiRequests.performGraphQLRequestString);
+
+    const mockNotification = mockPartialGitifyNotification({
+      title: 'Some pull request',
+      url: 'https://github.gitify.io/api/v3/repos/gitify-app/gitify/pulls/123' as Link,
+      type: 'PullRequest',
+    });
+    mockNotification.account = mockGitHubEnterpriseServerAccount;
+
+    performGraphQLRequestStringSpy.mockResolvedValue(
+      {} as ExecutionResult<FetchPullRequestByNumberQuery>,
+    );
+
+    await fetchPullByNumber(mockNotification);
+
+    const [account, query] = performGraphQLRequestStringSpy.mock.calls[0];
+    expect(account).toBe(mockGitHubEnterpriseServerAccount);
+    expect(query).not.toContain('stackEntry');
+    expect(query).not.toContain('@gated');
+    expect(query).toContain('query FetchPullRequestByNumber');
+  });
+
+  describe('fetchNotificationDetailsForList', () => {
+    it('fetchNotificationDetailsForList returns empty map if no notifications', async () => {
+      const performGraphQLRequestStringSpy = vi.mocked(apiRequests.performGraphQLRequestString);
+
+      const mockNotification = mockPartialGitifyNotification({
+        title: 'Some commit',
+        url: 'https://api.github.com/repos/gitify-app/gitify/commit/123' as Link,
+        type: 'Commit',
+      });
+
+      performGraphQLRequestStringSpy.mockResolvedValue({} as ExecutionResult<unknown>);
+
+      await fetchNotificationDetailsForList([mockNotification]);
+
+      expect(performGraphQLRequestStringSpy).not.toHaveBeenCalled();
+    });
+
+    it('fetchNotificationDetailsForList returns empty map if no supported notifications', async () => {
+      const performGraphQLRequestStringSpy = vi.mocked(apiRequests.performGraphQLRequestString);
+
+      performGraphQLRequestStringSpy.mockResolvedValue({} as ExecutionResult<unknown>);
+
+      await fetchNotificationDetailsForList([]);
+
+      expect(performGraphQLRequestStringSpy).not.toHaveBeenCalled();
+    });
+
+    it('fetchNotificationDetailsForList returns empty map if no notifications', async () => {
+      const performGraphQLRequestStringSpy = vi.mocked(apiRequests.performGraphQLRequestString);
+
+      performGraphQLRequestStringSpy.mockResolvedValue({
+        data: {},
+        headers: {},
+      } as ExecutionResult<unknown>);
+
+      await fetchNotificationDetailsForList(mockGitHubCloudGitifyNotifications);
+
+      expect(performGraphQLRequestStringSpy).toHaveBeenCalledWith(
+        mockGitHubCloudGitifyNotifications[0].account,
+        expect.stringMatching(/node0|node1/),
+        {
+          firstClosingIssues: 100,
+          firstLabels: 100,
+          firstReviewThreads: 100,
+          isDiscussionNotification0: false,
+          isDiscussionNotification1: false,
+          isIssueNotification0: true,
+          isIssueNotification1: true,
+          isPullRequestNotification0: false,
+          isPullRequestNotification1: false,
+          lastComments: 1,
+          lastReplies: 10,
+          lastReviews: 100,
+          lastThreadedComments: 10,
+          name0: 'notifications-test',
+          name1: 'notifications-test',
+          number0: 1,
+          number1: 4,
+          owner0: 'gitify-app',
+          owner1: 'gitify-app',
+        },
+      );
+
+      const query = performGraphQLRequestStringSpy.mock.calls[0][1];
+      expect(query).toContain('stackEntry');
+      expect(query).toContain('isAnswered');
+      expect(query).not.toContain('@gated');
+    });
+
+    it('fetchNotificationDetailsForList strips gated fields for GitHub Enterprise Server accounts', async () => {
+      const performGraphQLRequestStringSpy = vi.mocked(apiRequests.performGraphQLRequestString);
+
+      const notifications = mockGitHubCloudGitifyNotifications.map((notification) => ({
+        ...notification,
+        account: mockGitHubEnterpriseServerAccount,
+      }));
+
+      performGraphQLRequestStringSpy.mockResolvedValue({
+        data: {},
+        headers: {},
+      } as ExecutionResult<unknown>);
+
+      await fetchNotificationDetailsForList(notifications);
+
+      const [account, query, variables] = performGraphQLRequestStringSpy.mock.calls[0];
+      expect(account).toBe(mockGitHubEnterpriseServerAccount);
+      expect(query).not.toContain('stackEntry');
+      expect(query).not.toContain('isAnswered');
+      expect(query).not.toContain('@gated');
+      expect(query).toContain('FetchMergedNotifications');
+      expect(variables).not.toHaveProperty('includeStackEntry');
+      expect(variables).not.toHaveProperty('includeIsAnswered');
+    });
+  });
+});

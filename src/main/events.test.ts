@@ -1,0 +1,55 @@
+import { EVENTS } from '../shared/events';
+
+const onMock = vi.fn();
+const handleMock = vi.fn();
+
+vi.mock('electron', () => ({
+  ipcMain: {
+    on: (...args: unknown[]) => onMock(...args),
+    handle: (...args: unknown[]) => handleMock(...args),
+  } satisfies Pick<Electron.IpcMain, 'on' | 'handle'>,
+}));
+
+import type { Menubar } from 'electron-menubar';
+
+import { handleMainEvent, onMainEvent, sendRendererEvent } from './events';
+
+type MockMenubar = {
+  window: { webContents: { send: ReturnType<typeof vi.fn> } };
+};
+
+describe('main/events', () => {
+  it('onMainEvent registers ipcMain.on listener', () => {
+    const listenerMock = vi.fn();
+
+    onMainEvent(EVENTS.WINDOW_SHOW, listenerMock);
+
+    expect(onMock).toHaveBeenCalledWith(EVENTS.WINDOW_SHOW, listenerMock);
+  });
+
+  it('handleMainEvent registers ipcMain.handle listener', () => {
+    const listenerMock = vi.fn(() => 'v1.2.3');
+
+    handleMainEvent(EVENTS.VERSION, listenerMock);
+
+    expect(handleMock).toHaveBeenCalledWith(EVENTS.VERSION, listenerMock);
+  });
+
+  it('sendRendererEvent forwards event to webContents with data', () => {
+    const sendMock = vi.fn();
+    const mb: MockMenubar = { window: { webContents: { send: sendMock } } };
+
+    sendRendererEvent(mb as unknown as Menubar, EVENTS.UPDATE_ICON_TITLE, 'title');
+
+    expect(sendMock).toHaveBeenCalledWith(EVENTS.UPDATE_ICON_TITLE, 'title');
+  });
+
+  it('sendRendererEvent forwards event without data', () => {
+    const sendMock = vi.fn();
+    const mb: MockMenubar = { window: { webContents: { send: sendMock } } };
+
+    sendRendererEvent(mb as unknown as Menubar, EVENTS.RESET_APP);
+
+    expect(sendMock).toHaveBeenCalledWith(EVENTS.RESET_APP);
+  });
+});

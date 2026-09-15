@@ -1,0 +1,572 @@
+import type { FC } from 'react';
+
+import type { Icon, OcticonProps } from '@primer/octicons-react';
+import type { Button } from '@primer/react';
+
+// Derived from public @primer/react component props rather than internal types
+export type VariantType = NonNullable<React.ComponentPropsWithoutRef<typeof Button>['variant']>;
+
+import type { AuthMethod, PlatformType } from './utils/auth/types';
+
+import type {
+  DiscussionStateReason,
+  IssueState,
+  IssueStateReason,
+  LabelFieldsFragment,
+  MilestoneFieldsFragment,
+  PullRequestReviewState,
+  PullRequestState,
+  ReactionGroupFieldsFragment,
+} from './utils/forges/github/graphql/generated/graphql';
+
+declare const __brand: unique symbol;
+
+type Brand<B> = { [__brand]: B };
+
+export type Branded<T, B> = T & Brand<B>;
+
+export type AuthCode = Branded<string, 'AuthCode'>;
+
+export type Token = Branded<string, 'Token'>;
+
+export type ClientID = Branded<string, 'ClientID'>;
+
+export type ClientSecret = Branded<string, 'ClientSecret'>;
+
+export type Hostname = Branded<string, 'Hostname'>;
+
+export type Link = Branded<string, 'WebUrl'>;
+
+/**
+ * Cast a plain string into the branded `Link` type. Use at adapter
+ * boundaries where forge responses produce raw URL strings — calling out
+ * the cast in one place is more honest than scattering `as Link` everywhere.
+ */
+export function toLink(value: string): Link {
+  return value as Link;
+}
+
+/** Variant of `toLink` that preserves null. */
+export function toLinkOrNull(value: string | null | undefined): Link | null {
+  return value ? (value as Link) : null;
+}
+
+export type SearchToken = Branded<string, 'SearchToken'>;
+
+export type Status = 'loading' | 'success' | 'error';
+
+export type Percentage = Branded<number, 'Percentage'>;
+
+export type AccountUUID = Branded<string, 'AccountUUID'>;
+
+export type KeyboardAcceleratorShortcut = Branded<string, 'KeyboardAcceleratorShortcut'>;
+
+/** Code hosting provider for an account. New forges register themselves here. */
+export type Forge = 'github' | 'gitea' | 'bitbucket' | 'gitlab';
+
+export interface Account {
+  forge: Forge;
+  method: AuthMethod;
+  platform: PlatformType;
+  version?: string;
+  hostname: Hostname;
+  token: Token;
+  /** Atlassian account email — required for Bitbucket Basic Auth (email:token). */
+  username?: string;
+  user: GitifyUser | null;
+  scopes?: string[];
+}
+
+/**
+ * All allowed Config Settings keys to be stored in the application.
+ */
+export type SettingsState = AppearanceSettingsState &
+  NotificationSettingsState &
+  TraySettingsState &
+  SystemSettingsState;
+
+/**
+ * Settings related to the appearance of the application.
+ */
+export interface AppearanceSettingsState {
+  designLanguage: DesignLanguage;
+  /** The color-mode axis (color scheme / accessibility palette). */
+  theme: Theme;
+  /** High-contrast Primer schemes for Classic; also honours the OS setting. */
+  increaseContrast: boolean;
+  /** Colours the status icons under Glass, which renders them monochrome by default. */
+  showStatusIconColors: boolean;
+  zoomPercentage: Percentage;
+  showAccountHeader: boolean;
+  wrapNotificationTitle: boolean;
+}
+
+/**
+ * Settings related to the notifications within the application.
+ */
+export interface NotificationSettingsState {
+  groupBy: GroupBy;
+  fetchInterval: number;
+  fetchAllNotifications: boolean;
+  detailedNotifications: boolean;
+  showPills: boolean;
+  showNumber: boolean;
+  participating: boolean;
+  fetchReadNotifications: boolean;
+  markAsDoneOnOpen: boolean;
+  markAsDoneOnUnsubscribe: boolean;
+  delayNotificationState: boolean;
+}
+
+/**
+ * Settings related to the tray / menu bar behavior.
+ */
+export interface TraySettingsState {
+  showNotificationsCountInTray: boolean;
+  useUnreadActiveIcon: boolean;
+  useAlternateIdleIcon: boolean;
+}
+
+/**
+ * Settings related to the system behavior of the application.
+ */
+export interface SystemSettingsState {
+  openLinks: OpenPreference;
+  keyboardShortcut: boolean;
+  /** Electron accelerator string for toggling the app window (e.g. CommandOrControl+Shift+G). */
+  openGitifyShortcut: KeyboardAcceleratorShortcut;
+  showNotifications: boolean;
+  playSound: boolean;
+  notificationVolume: Percentage;
+  openAtStartup: boolean;
+  keepWindowOnBlur: boolean;
+  showUpdateNotifications: boolean;
+  /** Linux only. Runs under X11/XWayland so the popup can be anchored to the tray icon. */
+  useX11Backend: boolean;
+}
+
+/** Values are lower-cased because they double as the root `data-theme` attribute. */
+export enum DesignLanguage {
+  CLASSIC = 'classic',
+  GLASS = 'glass',
+}
+
+export enum Theme {
+  SYSTEM = 'SYSTEM',
+  LIGHT = 'LIGHT',
+  LIGHT_COLORBLIND = 'LIGHT_COLORBLIND',
+  LIGHT_TRITANOPIA = 'LIGHT_TRITANOPIA',
+  DARK = 'DARK',
+  DARK_COLORBLIND = 'DARK_COLORBLIND',
+  DARK_TRITANOPIA = 'DARK_TRITANOPIA',
+  DARK_DIMMED = 'DARK_DIMMED',
+}
+
+export enum OpenPreference {
+  FOREGROUND = 'FOREGROUND',
+  BACKGROUND = 'BACKGROUND',
+}
+
+export enum GroupBy {
+  REPOSITORY = 'REPOSITORY',
+  DATE = 'DATE',
+}
+
+export interface RadioGroupItem {
+  label: string;
+  value: string;
+}
+
+export interface AccountNotifications {
+  account: Account;
+  notifications: GitifyNotification[];
+  error: GitifyError | null;
+}
+
+export interface GitifyUser {
+  login: string;
+  name: string | null;
+  avatar: Link | null;
+  id: string;
+}
+
+/**
+ * Gitify error details.
+ */
+export interface GitifyError {
+  /**
+   * The title of the error.
+   */
+  title: string;
+
+  /**
+   * The description paragraphs explaining the error.
+   */
+  descriptions: string[];
+
+  /**
+   * An array of emojis that suitably summarize the error message.
+   */
+  emojis: string[];
+
+  /**
+   * Optional actions that can be taken to resolve the error.
+   */
+  actions?: GitifyErrorAction[];
+}
+
+/**
+ * An action that can be taken to resolve an error.
+ */
+export interface GitifyErrorAction {
+  /**
+   * The label for the error action button.
+   */
+  label: string;
+
+  /**
+   * The route to navigate to when the error action button is clicked.
+   */
+  route: string;
+
+  /**
+   * The visual variant of the error action button.
+   */
+  variant: VariantType;
+
+  /**
+   * The icon to display on the error action button.
+   */
+  icon: FC<OcticonProps>;
+}
+
+/**
+ * The different types of errors which may be encountered.
+ */
+export type ErrorType =
+  | 'ACTION_FORBIDDEN'
+  | 'BAD_CREDENTIALS'
+  | 'MISSING_SCOPES'
+  | 'NETWORK'
+  | 'OFFLINE'
+  | 'RATE_LIMITED'
+  | 'UNKNOWN';
+
+export interface TypeDetails {
+  title: string;
+  description?: string;
+}
+
+export enum IconColor {
+  GRAY = 'text-gitify-icon-muted',
+  GREEN = 'text-gitify-icon-open',
+  PURPLE = 'text-gitify-icon-done',
+  RED = 'text-gitify-icon-closed',
+  YELLOW = 'text-gitify-icon-attention',
+}
+
+export enum Opacity {
+  READ = 'opacity-50',
+  LOW = 'opacity-70',
+  MEDIUM = 'opacity-80',
+  HIGH = 'opacity-90',
+}
+
+export interface PullRequestApprovalIcon {
+  type: FC<OcticonProps>;
+  color: IconColor;
+  description: string;
+}
+
+export enum Size {
+  XSMALL = 12,
+  SMALL = 14,
+  MEDIUM = 16,
+  LARGE = 18,
+  XLARGE = 20,
+}
+
+/**
+ * Details for Chevron header accordion.
+ */
+export interface Chevron {
+  /**
+   * The chevron icon.
+   */
+  // TODO - improve the type here to be more specific about which icons are allowed, if possible
+  icon: FC<OcticonProps>;
+
+  /**
+   * The chevron label.
+   */
+  label: string;
+}
+
+export type FilterStateType = 'open' | 'closed' | 'merged' | 'draft' | 'other';
+
+/**
+ *
+ * Gitify Notification Types
+ *
+ * These types represent the clean, UI-focused notification structure
+ * used throughout the application.
+ *
+ * Raw GitHub API responses are transformed into these types at the API boundary.
+ *
+ **/
+
+/**
+ * Complete notification type for UI consumption.
+ * Contains only fields actually used by components.
+ */
+export interface GitifyNotification {
+  /** Unique notification ID from GitHub */
+  id: string;
+  /** Whether the notification is unread */
+  unread: boolean;
+  /** When the notification was last updated */
+  updatedAt: string;
+  /** Reason for receiving the notification */
+  reason: GitifyReason;
+  /** Subject details (what the notification is about) */
+  subject: GitifySubject;
+  /** Repository context */
+  repository: GitifyRepository;
+  /** Account context (for API operations) */
+  account: Account;
+  /** UI ordering index */
+  order: number;
+  /** Formatted information for display/presentation to user. */
+  display: GitifyNotificationDisplay;
+}
+
+/**
+ * A notification that has been transformed from a forge response but not yet
+ * formatted for display. The orchestrator pipeline (transform → filter →
+ * enrich → filter) operates on this type; `formatNotification` is the only
+ * place that widens it to `GitifyNotification` by populating `display`.
+ */
+export type RawGitifyNotification = Omit<GitifyNotification, 'display'>;
+
+/**
+ * Notification reason details
+ */
+export interface GitifyReason {
+  /** Reason code */
+  code: Reason;
+  /** Reason title */
+  title: string;
+  /** Reason description */
+  description: string;
+}
+
+/**
+ * Subject information combining REST and GraphQL enriched data.
+ */
+export interface GitifySubject {
+  /** Subject title */
+  title: string;
+  /** Subject type (Issue, PullRequest, etc.) */
+  type: SubjectType;
+  /** API URL for the subject */
+  url: Link | null;
+  /** API URL for the latest comment */
+  latestCommentUrl: Link | null;
+
+  // Enriched fields (from additional GraphQL or REST API calls)
+  /** Issue/PR/Discussion number */
+  number?: number;
+  /** Parsed state */
+  state?: GitifyNotificationState;
+  /**
+   * Identity shown for this notification in the UI (avatar, user-type filter).
+   * Resolves to the most recent actor: the latest commenter, falling back to
+   * the author.
+   */
+  user?: GitifyNotificationUser;
+  /** Author who created the thread (pull request/issue/discussion/release/commit) */
+  author?: GitifyNotificationUser;
+  /** Author of the latest comment, when the subject has comments */
+  commenter?: GitifyNotificationUser;
+  /** Whether the current user was directly requested or via team */
+  reviewRequested?: ReviewRequestType[];
+  /** PR reviewer states and review thread resolution counts */
+  reviewers?: GitifyPullRequestReviewer[];
+  /** PRs closing issues */
+  linkedIssues?: string[];
+  /** Total comment count */
+  commentCount?: number;
+  /** Labels names and colors */
+  labels?: GitifyLabels[];
+  /** Whether the PR is part of a GitHub native stacked PR series */
+  isStacked?: boolean;
+  /** This PR's 1-indexed position in the stack, when part of a stacked PR series */
+  stackPosition?: number;
+  /** Total number of PRs in the stack, when part of a stacked PR series */
+  stackDepth?: number;
+  /** GitHub-native issue type (e.g. Bug, Feature, Task) */
+  issueType?: GitifyIssueType;
+  /** Milestone state/title */
+  milestone?: GitifyMilestone;
+  /** Deep link to notification thread */
+  htmlUrl?: Link;
+  /** Reaction counts */
+  reactionsCount?: number;
+  /** Reaction groups */
+  reactionGroups?: GitifyReactionGroup[];
+}
+
+/**
+ * Minimal repository information needed for UI.
+ */
+export interface GitifyRepository {
+  /** Repository name */
+  name: string;
+  /** Full repository name (owner/repo) */
+  fullName: string;
+  /** Repository web URL */
+  htmlUrl: Link;
+  /** Repository owner */
+  owner: GitifyOwner;
+}
+
+/**
+ * Minimal owner information for avatar and navigation.
+ */
+export interface GitifyOwner {
+  /** Owner login name */
+  login: string;
+  /** Owner avatar URL */
+  avatarUrl: Link;
+  /** Owner type (User, Organization, Bot, etc.) */
+  type: UserType;
+}
+
+/**
+ * Minimal notification user information.
+ */
+export interface GitifyNotificationUser {
+  /** Notification user login name */
+  login: string;
+  /** Notification user's optional profile name */
+  name?: string | null;
+  /**  Notification user avatar URL */
+  avatarUrl: Link;
+  /**  Notification user html URL */
+  htmlUrl: Link;
+  /** Notification user type (User, Organization, Bot, etc.) */
+  type: UserType;
+}
+
+/**
+ * Formatted fields ready for display / presentation to the user.
+ */
+export interface GitifyNotificationDisplay {
+  /** Formatted notification title */
+  title: string;
+  /** Formatted notification type */
+  type: string;
+  /** Formatted notification number */
+  number: string;
+  /** Notification icon and color to display */
+  icon: {
+    type: Icon;
+    color: IconColor;
+  };
+  /** Notification default user type for fallback scenarios */
+  defaultUserType: UserType;
+}
+
+/** GitHub-native issue type, normalized to a Gitify icon color token */
+export interface GitifyIssueType {
+  name: string;
+  color: IconColor;
+}
+
+export type GitifyMilestone = MilestoneFieldsFragment;
+
+export type GitifyReactionGroup = ReactionGroupFieldsFragment;
+
+export type GitifyLabels = LabelFieldsFragment;
+
+export interface GitifyPullRequestReviewer {
+  user: string;
+  state?: PullRequestReviewState;
+  threads: {
+    resolved: number;
+    total: number;
+  };
+}
+
+export type GitifyDiscussionState = DiscussionStateReason | 'OPEN' | 'ANSWERED';
+
+export type GitifyPullRequestState = PullRequestState | 'DRAFT' | 'MERGE_QUEUE';
+
+export type GitifyIssueState = IssueState | IssueStateReason;
+
+export type GitifyNotificationState =
+  | GitifyCheckSuiteStatus
+  | GitifyDiscussionState
+  | GitifyIssueState
+  | GitifyPullRequestState;
+
+export type GitifyCheckSuiteStatus =
+  | 'ACTION_REQUIRED'
+  | 'CANCELLED'
+  | 'COMPLETED'
+  | 'FAILURE'
+  | 'IN_PROGRESS'
+  | 'PENDING'
+  | 'QUEUED'
+  | 'REQUESTED'
+  | 'SKIPPED'
+  | 'STALE'
+  | 'SUCCESS'
+  | 'TIMED_OUT'
+  | 'WAITING';
+
+/**
+ * Gitify Type Enhancements
+ *
+ * These types represent the clean, UI-focused notification structure
+ * used throughout the application.
+ *
+ * Raw GitHub API responses are transformed into these types at the API boundary.
+ **/
+
+// Stronger typings for string literal attributes
+export type Reason =
+  | 'approval_requested'
+  | 'assign'
+  | 'author'
+  | 'ci_activity'
+  | 'comment'
+  | 'invitation'
+  | 'manual'
+  | 'member_feature_requested'
+  | 'mention'
+  | 'review_requested'
+  | 'security_advisory_credit'
+  | 'security_alert'
+  | 'state_change'
+  | 'subscribed'
+  | 'team_mention';
+
+export type SubjectType =
+  | 'BitbucketNotification'
+  | 'CheckSuite'
+  | 'Commit'
+  | 'Discussion'
+  | 'GitLabTodo'
+  | 'Issue'
+  | 'PullRequest'
+  | 'Release'
+  | 'RepositoryAdvisory'
+  | 'RepositoryDependabotAlertsThread'
+  | 'RepositoryInvitation'
+  | 'RepositoryVulnerabilityAlert'
+  | 'WorkflowRun';
+
+export type UserType = 'Bot' | 'EnterpriseUserAccount' | 'Mannequin' | 'Organization' | 'User';
+
+export type ReviewRequestType = 'direct' | 'team';

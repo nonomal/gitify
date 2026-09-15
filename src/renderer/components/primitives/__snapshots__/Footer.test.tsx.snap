@@ -1,0 +1,41 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`renderer/components/primitives/Footer.tsx > should render itself & its children - end 1`] = `
+<div>
+  <div
+    class="left-sidebar bg-gitify-footer"
+  >
+    <div
+      class="prc-Stack-Stack-UQ9k6"
+      data-align="stretch"
+      data-component="Stack"
+      data-direction="horizontal"
+      data-justify="end"
+      data-padding="condensed"
+      data-wrap="nowrap"
+    >
+      Test
+    </div>
+  </div>
+</div>
+`;
+
+exports[`renderer/components/primitives/Footer.tsx > should render itself & its children - space-between 1`] = `
+<div>
+  <div
+    class="left-sidebar bg-gitify-footer"
+  >
+    <div
+      class="prc-Stack-Stack-UQ9k6"
+      data-align="stretch"
+      data-component="Stack"
+      data-direction="horizontal"
+      data-justify="space-between"
+      data-padding="condensed"
+      data-wrap="nowrap"
+    >
+      Test
+    </div>
+  </div>
+</div>
+`;

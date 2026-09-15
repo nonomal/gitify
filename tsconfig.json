@@ -1,19 +1,28 @@
 {
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.d.ts"],
   "compilerOptions": {
-    "module": "es6",
-    "moduleResolution": "Bundler",
-    "target": "es2022",
-    "outDir": "./build/",
-    "sourceMap": true,
-    "noImplicitAny": false,
-    "noUnusedLocals": true,
+    "incremental": true,
+    "target": "ES2024",
+    "module": "ESNext",
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
     "jsx": "react-jsx",
-    "allowJs": true,
-    "allowSyntheticDefaultImports": true,
+    "rootDir": "./src",
+    "outDir": "./build/",
+    "types": ["vite-plus/test/globals", "vite/client"],
+
+    "strict": true,
     "esModuleInterop": true,
-    "types": ["jest"],
+    "moduleResolution": "bundler",
     "skipLibCheck": true,
-    "checkJs": true
-  },
-  "include": ["src/**/*.js", "src/**/*.ts", "src/**/*.tsx"]
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+
+    "noImplicitOverride": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+
+    "resolveJsonModule": true
+  }
 }

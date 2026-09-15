@@ -1,0 +1,19 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`renderer/components/filters/RequiresDetailedNotificationsWarning.tsx > should render itself & its children 1`] = `
+<div>
+  <span
+    class="text-gitify-caution prc-Text-Text-9mHv3"
+    data-component="Text"
+  >
+    ⚠️ This filter requires the 
+    <strong
+      class="prc-Text-Text-9mHv3"
+      data-component="Text"
+    >
+      Detailed Notifications
+    </strong>
+     setting to be enabled.
+  </span>
+</div>
+`;

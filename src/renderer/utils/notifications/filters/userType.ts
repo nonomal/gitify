@@ -1,0 +1,69 @@
+import { useFiltersStore } from '../../../stores';
+
+import type {
+  AccountNotifications,
+  RawGitifyNotification,
+  TypeDetails,
+  UserType,
+} from '../../../types';
+import type { Filter } from './types';
+
+type FilterableUserType = Extract<UserType, 'User' | 'Bot' | 'Organization'>;
+
+const USER_TYPE_DETAILS: Record<UserType, TypeDetails> = {
+  User: {
+    title: 'User',
+  },
+  Bot: {
+    title: 'Bot',
+    description: 'Bot accounts such as @copilot, @dependabot, @renovate, @netlify, etc',
+  },
+  Organization: {
+    title: 'Organization',
+  },
+} satisfies Partial<Record<FilterableUserType, TypeDetails>> as Record<UserType, TypeDetails>;
+
+export const userTypeFilter: Filter<UserType> = {
+  FILTER_TYPES: USER_TYPE_DETAILS,
+
+  requiresDetailsNotifications: true,
+
+  getTypeDetails(userType: UserType): TypeDetails {
+    return this.FILTER_TYPES[userType];
+  },
+
+  hasFilters(): boolean {
+    const filters = useFiltersStore.getState();
+    return filters.userTypes.length > 0;
+  },
+
+  isFilterSet(userType: UserType): boolean {
+    const filters = useFiltersStore.getState();
+    return filters.userTypes.includes(userType);
+  },
+
+  getFilterCount(accountNotifications: AccountNotifications[], userType: UserType): number {
+    return accountNotifications.reduce(
+      (sum, account) =>
+        sum + account.notifications.filter((n) => this.filterNotification(n, userType)).length,
+      0,
+    );
+  },
+
+  filterNotification(notification: RawGitifyNotification, userType: UserType): boolean {
+    // Match on the thread author so e.g. "Bot" means "authored by a bot"
+    // (dependabot, renovate) rather than "a bot left the latest comment".
+    const allUserTypes = ['User', 'EnterpriseUserAccount'];
+
+    if (userType === 'User') {
+      return allUserTypes.includes(notification.subject?.author?.type ?? '');
+    }
+
+    return notification.subject?.author?.type === userType;
+  },
+};
+
+// Keep this function directly exported as it's not part of the interface
+export function isNonHumanUser(type: UserType): boolean {
+  return type === 'Bot' || type === 'Organization' || type === 'Mannequin';
+}

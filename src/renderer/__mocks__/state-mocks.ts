@@ -1,0 +1,75 @@
+import { Constants } from '../constants';
+
+import {
+  type Account,
+  type AppearanceSettingsState,
+  DesignLanguage,
+  GroupBy,
+  type KeyboardAcceleratorShortcut,
+  type NotificationSettingsState,
+  OpenPreference,
+  type Percentage,
+  type SettingsState,
+  type SystemSettingsState,
+  Theme,
+  type Token,
+  type TraySettingsState,
+} from '../types';
+
+import { mockGitHubCloudAccount, mockGitHubEnterpriseServerAccount } from './account-mocks';
+
+export const mockAuth: { accounts: Account[] } = {
+  accounts: [mockGitHubCloudAccount, mockGitHubEnterpriseServerAccount],
+};
+
+export const mockToken = 'token-123-456' as Token;
+
+const mockAppearanceSettings: AppearanceSettingsState = {
+  designLanguage: DesignLanguage.CLASSIC,
+  theme: Theme.SYSTEM,
+  increaseContrast: false,
+  showStatusIconColors: false,
+  zoomPercentage: 100 as Percentage,
+  showAccountHeader: false,
+  wrapNotificationTitle: false,
+};
+
+const mockNotificationSettings: NotificationSettingsState = {
+  groupBy: GroupBy.REPOSITORY,
+  fetchInterval: Constants.DEFAULT_FETCH_NOTIFICATIONS_INTERVAL_MS,
+  fetchAllNotifications: true,
+  detailedNotifications: true,
+  showPills: true,
+  showNumber: true,
+  participating: false,
+  fetchReadNotifications: false,
+  markAsDoneOnOpen: false,
+  markAsDoneOnUnsubscribe: false,
+  delayNotificationState: false,
+};
+
+const mockTraySettings: TraySettingsState = {
+  showNotificationsCountInTray: true,
+  useUnreadActiveIcon: true,
+  useAlternateIdleIcon: false,
+};
+
+const mockSystemSettings: SystemSettingsState = {
+  openLinks: OpenPreference.FOREGROUND,
+  keyboardShortcut: true,
+  openGitifyShortcut: 'CommandOrControl+Shift+G' as KeyboardAcceleratorShortcut,
+  showNotifications: true,
+  playSound: true,
+  notificationVolume: 20 as Percentage,
+  openAtStartup: false,
+  keepWindowOnBlur: false,
+  showUpdateNotifications: true,
+  useX11Backend: false,
+};
+
+export const mockSettings: SettingsState = {
+  ...mockAppearanceSettings,
+  ...mockNotificationSettings,
+  ...mockTraySettings,
+  ...mockSystemSettings,
+};

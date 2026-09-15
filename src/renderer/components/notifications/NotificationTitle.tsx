@@ -1,0 +1,37 @@
+import type { FC } from 'react';
+
+import { Text } from '@primer/react';
+
+import { cn } from 'cn';
+
+import { useSettingsStore } from '../../stores';
+
+import { parseInlineCode } from '../../utils/ui/display';
+
+interface NotificationTitleProps {
+  title: string;
+}
+
+export const NotificationTitle: FC<NotificationTitleProps> = ({
+  title,
+}: NotificationTitleProps) => {
+  const wrapNotificationTitle = useSettingsStore((s) => s.wrapNotificationTitle);
+
+  const parts = parseInlineCode(title);
+
+  return (
+    <Text className={cn(!wrapNotificationTitle && 'truncate')}>
+      {parts.map((part) => (
+        <Text
+          className={cn(
+            part.type === 'code' &&
+              'px-1 py-0.5 rounded bg-gitify-notification-hover font-mono text-xs',
+          )}
+          key={part.id}
+        >
+          {part.content}
+        </Text>
+      ))}
+    </Text>
+  );
+};

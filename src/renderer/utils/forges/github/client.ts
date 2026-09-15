@@ -1,0 +1,341 @@
+import { Constants } from '../../../constants';
+
+import useSettingsStore from '../../../stores/useSettingsStore';
+
+import type { Account, Link, RawGitifyNotification } from '../../../types';
+import type {
+  GetCommitCommentResponse,
+  GetCommitResponse,
+  GetReleaseResponse,
+  IgnoreNotificationThreadSubscriptionResponse,
+  ListNotificationsForAuthenticatedUserResponse,
+  MarkNotificationThreadAsDoneResponse,
+  MarkNotificationThreadAsReadResponse,
+} from './types';
+
+import { reportServerPollInterval } from '../../notifications/pollInterval';
+import { getGitHubCapabilities } from './capabilities';
+import {
+  FetchDiscussionByNumberDocument,
+  type FetchDiscussionByNumberQuery,
+  FetchIssueByNumberDocument,
+  type FetchIssueByNumberQuery,
+  type FetchMergedDetailsTemplateQuery,
+  FetchPullRequestByNumberDocument,
+  type FetchPullRequestByNumberQuery,
+} from './graphql/generated/graphql';
+import { MergeQueryBuilder } from './graphql/MergeQueryBuilder';
+import { stripGatedSelections } from './graphql/utils';
+import { createNotificationHandler } from './handlers';
+import { createOctokitClient, createOctokitClientUncached } from './octokit';
+import { performGraphQLRequest, performGraphQLRequestString } from './request';
+import { getNumberFromUrl } from './utils';
+
+/**
+ * Fetch details of the currently authenticated GitHub user.
+ *
+ * Always fetches fresh data without caching to ensure up-to-date user info.
+ */
+export async function fetchAuthenticatedUserDetails(account: Account) {
+  const octokit = await createOctokitClientUncached(account, 'rest');
+
+  return await octokit.rest.users.getAuthenticated({
+    headers: {
+      'Cache-Control': 'no-cache', // Prevent caching
+    },
+  });
+}
+
+/**
+ * List all notifications for the current user, sorted by most recently updated.
+ *
+ * The server-recommended minimum poll interval (`X-Poll-Interval` header) is
+ * reported to the poll interval registry so the notifications query can slow
+ * down when GitHub asks clients to back off.
+ *
+ * Endpoint documentation: https://docs.github.com/en/rest/activity/notifications#list-notifications-for-the-authenticated-user
+ */
+export async function listNotificationsForAuthenticatedUser(
+  account: Account,
+): Promise<ListNotificationsForAuthenticatedUserResponse> {
+  const settings = useSettingsStore.getState();
+  const octokit = await createOctokitClient(account, 'rest');
+
+  if (settings.fetchAllNotifications) {
+    // Fetch all pages using Octokit's pagination
+    return await octokit.paginate(
+      octokit.rest.activity.listNotificationsForAuthenticatedUser,
+      {
+        participating: settings.participating,
+        all: settings.fetchReadNotifications,
+        per_page: 100,
+        headers: {
+          'Cache-Control': 'no-cache', // Prevent caching
+        },
+      },
+      (response) => {
+        reportServerPollInterval(account, Number(response.headers['x-poll-interval']));
+
+        return response.data;
+      },
+    );
+  }
+
+  // Single page request
+  const response = await octokit.rest.activity.listNotificationsForAuthenticatedUser({
+    participating: settings.participating,
+    all: settings.fetchReadNotifications,
+    per_page: 100,
+    headers: {
+      'Cache-Control': 'no-cache', // Prevent caching
+    },
+  });
+
+  reportServerPollInterval(account, Number(response.headers['x-poll-interval']));
+
+  return response.data;
+}
+
+/**
+ * Marks a thread as "read." Marking a thread as "read" is equivalent to
+ * clicking a notification in your notification inbox on GitHub.
+ *
+ * Endpoint documentation: https://docs.github.com/en/rest/activity/notifications#mark-a-thread-as-read
+ */
+export async function markNotificationThreadAsRead(
+  account: Account,
+  threadId: string,
+): Promise<MarkNotificationThreadAsReadResponse> {
+  const octokit = await createOctokitClient(account, 'rest');
+
+  const response = await octokit.rest.activity.markThreadAsRead({
+    thread_id: Number(threadId),
+  });
+
+  return response.data;
+}
+
+/**
+ * Marks a thread as "done." Marking a thread as "done" is equivalent to marking a
+ * notification in your notification inbox on GitHub as done.
+ *
+ * NOTE: This was added to GitHub Enterprise Server in version 3.13 or later.
+ *
+ * Endpoint documentation: https://docs.github.com/en/rest/activity/notifications#mark-a-thread-as-done
+ */
+export async function markNotificationThreadAsDone(
+  account: Account,
+  threadId: string,
+): Promise<MarkNotificationThreadAsDoneResponse> {
+  const octokit = await createOctokitClient(account, 'rest');
+
+  const response = await octokit.rest.activity.markThreadAsDone({
+    thread_id: Number(threadId),
+  });
+
+  return response.data;
+}
+
+/**
+ * Ignore future notifications for threads until you comment on the thread or get a `@mention`.
+ *
+ * Endpoint documentation: https://docs.github.com/en/rest/activity/notifications#delete-a-thread-subscription
+ */
+export async function ignoreNotificationThreadSubscription(
+  account: Account,
+  threadId: string,
+): Promise<IgnoreNotificationThreadSubscriptionResponse> {
+  const octokit = await createOctokitClient(account, 'rest');
+
+  const response = await octokit.rest.activity.setThreadSubscription({
+    thread_id: Number(threadId),
+    ignored: true,
+  });
+
+  return response.data;
+}
+
+/**
+ * Returns the contents of a single commit reference.
+ *
+ * Endpoint documentation: https://docs.github.com/en/rest/commits/commits#get-a-commit
+ */
+export async function getCommit(account: Account, url: Link): Promise<GetCommitResponse> {
+  return followUrl<GetCommitResponse>(account, url);
+}
+
+/**
+ * Gets a specified commit comment.
+ *
+ * Endpoint documentation: https://docs.github.com/en/rest/commits/comments#get-a-commit-comment
+ */
+export async function getCommitComment(
+  account: Account,
+  url: Link,
+): Promise<GetCommitCommentResponse> {
+  return followUrl<GetCommitCommentResponse>(account, url);
+}
+
+/**
+ * Gets a public release with the specified release ID.
+ *
+ * Endpoint documentation: https://docs.github.com/en/rest/releases/releases#get-a-release
+ */
+export async function getRelease(account: Account, url: Link): Promise<GetReleaseResponse> {
+  return followUrl<GetReleaseResponse>(account, url);
+}
+
+/**
+ * Follow GitHub Response URL
+ */
+async function followUrl<TResult>(account: Account, url: Link): Promise<TResult> {
+  const octokit = await createOctokitClient(account, 'rest');
+
+  // Perform a generic GET request using Octokit's request method and cast the response type
+  const response = await octokit.request('GET {+url}', {
+    url: url,
+  });
+
+  return response.data as TResult;
+}
+
+/**
+ * Fetch GitHub Discussion by Discussion Number.
+ */
+export async function fetchDiscussionByNumber(
+  notification: RawGitifyNotification,
+): Promise<FetchDiscussionByNumberQuery> {
+  const number = getNumberFromUrl(notification.subject.url!);
+
+  const query = stripGatedSelections(
+    FetchDiscussionByNumberDocument.toString(),
+    getGitHubCapabilities(notification.account),
+  );
+
+  return performGraphQLRequestString<FetchDiscussionByNumberQuery>(notification.account, query, {
+    owner: notification.repository.owner.login,
+    name: notification.repository.name,
+    number: number,
+    firstLabels: Constants.GRAPHQL_ARGS.FIRST_LABELS,
+    lastThreadedComments: Constants.GRAPHQL_ARGS.LAST_THREADED_COMMENTS,
+    lastReplies: Constants.GRAPHQL_ARGS.LAST_REPLIES,
+  });
+}
+
+/**
+ * Fetch GitHub Issue by Issue Number.
+ */
+export async function fetchIssueByNumber(
+  notification: RawGitifyNotification,
+): Promise<FetchIssueByNumberQuery> {
+  const number = getNumberFromUrl(notification.subject.url!);
+
+  return performGraphQLRequest(notification.account, FetchIssueByNumberDocument, {
+    owner: notification.repository.owner.login,
+    name: notification.repository.name,
+    number: number,
+    firstLabels: Constants.GRAPHQL_ARGS.FIRST_LABELS,
+    lastComments: Constants.GRAPHQL_ARGS.LAST_COMMENTS,
+  });
+}
+
+/**
+ * Fetch GitHub Pull Request by PR Number.
+ */
+export async function fetchPullByNumber(
+  notification: RawGitifyNotification,
+): Promise<FetchPullRequestByNumberQuery> {
+  const number = getNumberFromUrl(notification.subject.url!);
+
+  const query = stripGatedSelections(
+    FetchPullRequestByNumberDocument.toString(),
+    getGitHubCapabilities(notification.account),
+  );
+
+  return performGraphQLRequestString<FetchPullRequestByNumberQuery>(notification.account, query, {
+    owner: notification.repository.owner.login,
+    name: notification.repository.name,
+    number: number,
+    firstClosingIssues: Constants.GRAPHQL_ARGS.FIRST_CLOSING_ISSUES,
+    firstLabels: Constants.GRAPHQL_ARGS.FIRST_LABELS,
+    lastComments: Constants.GRAPHQL_ARGS.LAST_COMMENTS,
+    lastReviews: Constants.GRAPHQL_ARGS.LAST_REVIEWS,
+    firstReviewThreads: Constants.GRAPHQL_ARGS.FIRST_REVIEW_THREADS,
+  });
+}
+
+/**
+ * Fetch notification details for supported types (ie: Discussions, Issues and Pull Requests).
+
+ * This significantly reduces the amount of API calls by performing a building a merged GraphQL query,
+ * making the most efficient use of the available GitHub API quota limits.
+ */
+export async function fetchNotificationDetailsForList(
+  notifications: RawGitifyNotification[],
+): Promise<Map<RawGitifyNotification, FetchMergedDetailsTemplateQuery['repository']>> {
+  const results = new Map<RawGitifyNotification, FetchMergedDetailsTemplateQuery['repository']>();
+
+  if (!notifications.length) {
+    return results;
+  }
+
+  // Build merged query using the builder
+  const builder = new MergeQueryBuilder();
+  const aliasToNotification = new Map<string, RawGitifyNotification>();
+  let hasSupportedNotification = false;
+
+  for (const notification of notifications) {
+    const handler = createNotificationHandler(notification);
+    if (!handler.supportsMergedQueryEnrichment) {
+      continue;
+    }
+
+    hasSupportedNotification = true;
+
+    const alias = builder.addNode({
+      owner: notification.repository.owner.login,
+      name: notification.repository.name,
+      number: getNumberFromUrl(notification.subject.url!),
+      isDiscussionNotification: notification.subject.type === 'Discussion',
+      isIssueNotification: notification.subject.type === 'Issue',
+      isPullRequestNotification: notification.subject.type === 'PullRequest',
+    });
+
+    aliasToNotification.set(alias, notification);
+  }
+
+  if (!hasSupportedNotification) {
+    return results;
+  }
+
+  builder.setSharedVariables({
+    firstClosingIssues: Constants.GRAPHQL_ARGS.FIRST_CLOSING_ISSUES,
+    firstLabels: Constants.GRAPHQL_ARGS.FIRST_LABELS,
+    lastComments: Constants.GRAPHQL_ARGS.LAST_COMMENTS,
+    lastThreadedComments: Constants.GRAPHQL_ARGS.LAST_THREADED_COMMENTS,
+    lastReplies: Constants.GRAPHQL_ARGS.LAST_REPLIES,
+    lastReviews: Constants.GRAPHQL_ARGS.LAST_REVIEWS,
+    firstReviewThreads: Constants.GRAPHQL_ARGS.FIRST_REVIEW_THREADS,
+  });
+
+  const query = stripGatedSelections(
+    builder.getGraphQLQuery(),
+    getGitHubCapabilities(notifications[0].account),
+  );
+  const variables = builder.getGraphQLVariables();
+
+  const response = await performGraphQLRequestString(notifications[0].account, query, variables);
+
+  for (const [alias, notification] of aliasToNotification) {
+    const repoData = (response as Record<string, unknown>)[alias] as
+      | Record<string, unknown>
+      | undefined;
+    if (!repoData) {
+      continue; // Skip if no data for this alias
+    }
+    const fragment = Object.values(repoData)[0] as FetchMergedDetailsTemplateQuery['repository'];
+    results.set(notification, fragment);
+  }
+
+  return results;
+}

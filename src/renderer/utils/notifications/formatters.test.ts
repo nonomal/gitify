@@ -1,0 +1,157 @@
+import { mockPartialGitifyNotification } from '../../__mocks__/notifications-mocks';
+
+import type { Link } from '../../types';
+
+import {
+  formatForDisplay,
+  formatMetricDescription,
+  formatNotification,
+  formatNotificationNumber,
+  formatNotificationTitle,
+  formatNotificationType,
+  formatProperCase,
+} from './formatters';
+
+describe('renderer/utils/notifications/formatters.ts', () => {
+  it('formatNotification', () => {
+    const mockNotification = mockPartialGitifyNotification({
+      title: 'This is a mock discussion',
+      type: 'Discussion',
+      url: 'https://api.github.com/repos/gitify-app/notifications-test/discussions/123' as Link,
+      latestCommentUrl: null,
+    });
+
+    const formatted = formatNotification(mockNotification);
+
+    expect(formatted.display).toBeDefined();
+    expect(formatted.display.title).toBe('This is a mock discussion');
+    expect(formatted.display.type).toBe('Discussion');
+    expect(formatted.display.number).toBe('');
+    expect(formatted.display.defaultUserType).toBe('User');
+  });
+
+  it('formatProperCase', () => {
+    expect(formatProperCase(null as unknown as string)).toBe('');
+    expect(formatProperCase('')).toBe('');
+    expect(formatProperCase('OUTDATED discussion')).toBe('Outdated Discussion');
+  });
+
+  it('formatForDisplay', () => {
+    expect(formatForDisplay(null as unknown as string[])).toBe('');
+    expect(formatForDisplay([])).toBe('');
+    expect(formatForDisplay(['open', 'PullRequest'])).toBe('Open Pull Request');
+    expect(formatForDisplay(['OUTDATED', 'Discussion'])).toBe('Outdated Discussion');
+    expect(formatForDisplay(['not_planned', 'Issue'])).toBe('Not Planned Issue');
+  });
+
+  describe('formattedNotificationType', () => {
+    it('formats state and type with proper casing and spacing', () => {
+      const notification = mockPartialGitifyNotification({
+        title: 'Sample',
+        type: 'PullRequest',
+        state: 'OPEN',
+      });
+
+      expect(formatNotificationType(notification)).toBe('Open Pull Request');
+    });
+
+    it('handles missing state (null) gracefully', () => {
+      const notification = mockPartialGitifyNotification({
+        title: 'Sample',
+        type: 'Issue',
+        state: undefined,
+      });
+
+      expect(formatNotificationType(notification)).toBe('Issue');
+    });
+
+    it('keeps the brand name intact for GitLab to-do items', () => {
+      // Camel-splitting would render this as "Git Lab Todo".
+      const notification = mockPartialGitifyNotification({
+        title: 'Sample',
+        type: 'GitLabTodo',
+        state: undefined,
+      });
+
+      expect(formatNotificationType(notification)).toBe('GitLab To-Do');
+    });
+
+    it('prefixes the state for GitLab to-do items', () => {
+      const notification = mockPartialGitifyNotification({
+        title: 'Sample',
+        type: 'GitLabTodo',
+        state: 'OPEN',
+      });
+
+      expect(formatNotificationType(notification)).toBe('Open GitLab To-Do');
+    });
+  });
+
+  describe('formattedNotificationNumber', () => {
+    it('returns formatted number when present', () => {
+      const notification = mockPartialGitifyNotification({
+        title: 'Sample',
+        type: 'Issue',
+        state: 'OPEN',
+      });
+      notification.subject.number = 42;
+
+      expect(formatNotificationNumber(notification)).toBe('#42');
+    });
+
+    it('returns empty string when number absent', () => {
+      const notification = mockPartialGitifyNotification({
+        title: 'Sample',
+        type: 'Issue',
+        state: 'OPEN',
+      });
+
+      expect(formatNotificationNumber(notification)).toBe('');
+    });
+  });
+
+  describe('formattedNotificationTitle', () => {
+    it('appends number in brackets when present', () => {
+      const notification = mockPartialGitifyNotification({
+        title: 'Fix bug',
+        type: 'Issue',
+        state: 'OPEN',
+      });
+      notification.subject.number = 101;
+
+      expect(formatNotificationTitle(notification)).toBe('Fix bug [#101]');
+    });
+
+    it('returns title unchanged when number missing', () => {
+      const notification = mockPartialGitifyNotification({
+        title: 'Improve docs',
+        type: 'Issue',
+        state: 'OPEN',
+      });
+
+      expect(formatNotificationTitle(notification)).toBe('Improve docs');
+    });
+  });
+
+  describe('formatMetricDescription', () => {
+    it('return empty if no count', () => {
+      expect(formatMetricDescription(null as unknown as number, 'bee')).toBe('');
+    });
+
+    it('return singular if count is 1', () => {
+      expect(formatMetricDescription(1, 'bee')).toBe('1 bee');
+    });
+
+    it('return pluralized if count is more than 1', () => {
+      expect(formatMetricDescription(2, 'bee')).toBe('2 bees');
+    });
+
+    it('return with custom formatter', () => {
+      expect(
+        formatMetricDescription(2, 'bee', (_count, noun) => {
+          return `Hi ${noun}`;
+        }),
+      ).toBe('Hi bees');
+    });
+  });
+});

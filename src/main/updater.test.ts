@@ -1,0 +1,384 @@
+import { dialog } from 'electron';
+import type { Menubar } from 'electron-menubar';
+
+import { APPLICATION } from '../shared/constants';
+import { logError, logInfo } from '../shared/logger';
+
+vi.mock('../shared/logger', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../shared/logger')>();
+  return {
+    ...actual,
+    logInfo: vi.fn(),
+    logError: vi.fn(),
+  };
+});
+
+import MenuBuilder from './menu';
+import AppUpdater from './updater';
+
+// Mock electron-updater with an EventEmitter-like interface
+type UpdateDownloadedEvent = { releaseName?: string | null; version?: string };
+type ListenerArgs = UpdateDownloadedEvent | object | undefined;
+type Listener = (arg: ListenerArgs) => void;
+type ListenerMap = Record<string, Listener[]>;
+const listeners: ListenerMap = {};
+
+vi.mock('electron-updater', () => ({
+  autoUpdater: {
+    on: vi.fn((event: string, cb: Listener) => {
+      if (!listeners[event]) {
+        listeners[event] = [];
+      }
+      listeners[event].push(cb);
+      return this;
+    }),
+    checkForUpdates: vi.fn().mockResolvedValue(undefined),
+    checkForUpdatesAndNotify: vi.fn().mockResolvedValue(undefined),
+    quitAndInstall: vi.fn(),
+  },
+}));
+
+// Mock electron (dialog + basic Menu API used by MenuBuilder constructor)
+vi.mock('electron', () => {
+  class MenuItem {
+    constructor(opts: unknown) {
+      Object.assign(this, opts);
+    }
+  }
+  return {
+    dialog: {
+      showMessageBox: vi.fn(),
+    } satisfies Pick<Electron.Dialog, 'showMessageBox'>,
+    MenuItem,
+    Menu: {
+      buildFromTemplate: vi.fn(),
+    } satisfies Pick<typeof Electron.Menu, 'buildFromTemplate'>,
+    shell: {
+      openExternal: vi.fn(),
+    } satisfies Pick<Electron.Shell, 'openExternal'>,
+  };
+});
+
+// Utility to emit mocked autoUpdater events
+const emit = (event: string, arg?: ListenerArgs) => {
+  (listeners[event] || []).forEach((cb) => {
+    cb(arg);
+  });
+};
+
+// Re-import autoUpdater after mocking
+import { autoUpdater } from 'electron-updater';
+
+describe('main/updater.ts', () => {
+  let menubar: Menubar;
+  class TestMenuBuilder extends MenuBuilder {
+    public override setCheckForUpdatesMenuEnabled = vi.fn();
+    public override setNoUpdateAvailableMenuVisibility = vi.fn();
+    public override setUpdateAvailableMenuVisibility = vi.fn();
+    public override setUpdateReadyForInstallMenuVisibility = vi.fn();
+  }
+
+  let menuBuilder: TestMenuBuilder;
+  let updater: AppUpdater;
+
+  beforeEach(() => {
+    for (const k of Object.keys(listeners)) {
+      delete listeners[k];
+    }
+
+    menubar = {
+      app: {
+        isPackaged: true,
+        // updater.initialize is now only called after app is ready externally
+        on: vi.fn(),
+      },
+      tray: { setToolTip: vi.fn() },
+    } as unknown as Menubar;
+
+    menuBuilder = new TestMenuBuilder(menubar);
+    updater = new AppUpdater(menubar, menuBuilder);
+  });
+
+  describe('update available dialog', () => {
+    it('shows dialog with expected message and does NOT install when user chooses Later', async () => {
+      vi.mocked(dialog.showMessageBox).mockResolvedValue({
+        response: 1, // "Later" button index
+        checkboxChecked: false,
+      });
+
+      await updater.start();
+
+      // Simulate update downloaded event
+      const releaseName = 'v1.2.3';
+      emit('update-downloaded', { releaseName });
+
+      expect(dialog.showMessageBox).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining(
+            `${APPLICATION.NAME} ${releaseName} has been downloaded`,
+          ),
+          buttons: ['Restart', 'Later'],
+        }),
+      );
+      expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
+      expect(menuBuilder.setUpdateAvailableMenuVisibility).toHaveBeenCalledWith(false);
+      expect(menuBuilder.setUpdateReadyForInstallMenuVisibility).toHaveBeenCalledWith(true);
+    });
+
+    it('falls back to the version when the release has no name', async () => {
+      vi.mocked(dialog.showMessageBox).mockResolvedValue({
+        response: 1, // "Later" button index
+        checkboxChecked: false,
+      });
+
+      await updater.start();
+
+      emit('update-downloaded', { releaseName: null, version: '1.2.3' });
+
+      expect(dialog.showMessageBox).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: `${APPLICATION.NAME} 1.2.3 has been downloaded`,
+        }),
+      );
+    });
+
+    it('reports a downloaded update in the menu without showing a dialog when notifications are disabled', async () => {
+      updater.setNotificationsEnabled(false);
+
+      await updater.start();
+
+      emit('update-downloaded', { releaseName: 'v1.2.3' });
+
+      expect(dialog.showMessageBox).not.toHaveBeenCalled();
+      expect(menuBuilder.setUpdateAvailableMenuVisibility).toHaveBeenCalledWith(false);
+      expect(menuBuilder.setUpdateReadyForInstallMenuVisibility).toHaveBeenCalledWith(true);
+    });
+
+    it('invokes quitAndInstall when user clicks Restart', async () => {
+      vi.mocked(dialog.showMessageBox).mockResolvedValue({
+        response: 0, // "Restart" button index
+        checkboxChecked: false,
+      });
+
+      await updater.start();
+
+      emit('update-downloaded', { releaseName: 'v9.9.9' });
+
+      // Allow then() of showMessageBox promise to resolve
+      await Promise.resolve();
+
+      expect(autoUpdater.quitAndInstall).toHaveBeenCalled();
+    });
+
+    it('does not install when user dismisses the dialog', async () => {
+      vi.mocked(dialog.showMessageBox).mockResolvedValue({
+        response: 1, // "Later" button index
+        checkboxChecked: false,
+      });
+
+      await updater.start();
+
+      emit('update-downloaded', { releaseName: 'v9.9.9' });
+
+      // Allow then() of showMessageBox promise to resolve
+      await Promise.resolve();
+
+      expect(autoUpdater.quitAndInstall).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('update event handlers & scheduling', () => {
+    it('skips when app is not packaged', async () => {
+      Object.defineProperty(menubar.app, 'isPackaged', { value: false });
+
+      await updater.start();
+
+      expect(logInfo).toHaveBeenCalledWith(
+        'app updater',
+        'Skipping updater since app is in development mode',
+      );
+      expect(autoUpdater.checkForUpdatesAndNotify).not.toHaveBeenCalled();
+    });
+
+    it('starts only once when settings updates arrive concurrently', async () => {
+      await Promise.all([updater.start(), updater.start()]);
+
+      expect(autoUpdater.checkForUpdatesAndNotify).toHaveBeenCalledTimes(1);
+    });
+
+    it('checks silently when update notifications are disabled', async () => {
+      updater.setNotificationsEnabled(false);
+
+      await updater.start();
+
+      expect(autoUpdater.checkForUpdates).toHaveBeenCalledTimes(1);
+      expect(autoUpdater.checkForUpdatesAndNotify).not.toHaveBeenCalled();
+    });
+
+    it('keeps silent update checks running on schedule when notifications are disabled', async () => {
+      vi.useFakeTimers();
+      try {
+        updater.setNotificationsEnabled(false);
+
+        await updater.start();
+        expect(autoUpdater.checkForUpdates).toHaveBeenCalledTimes(1);
+
+        await vi.advanceTimersByTimeAsync(APPLICATION.UPDATE_CHECK_INTERVAL_MS);
+
+        expect(autoUpdater.checkForUpdates).toHaveBeenCalledTimes(2);
+        expect(autoUpdater.checkForUpdatesAndNotify).not.toHaveBeenCalled();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('handles checking-for-update', async () => {
+      await updater.start();
+
+      emit('checking-for-update');
+
+      expect(menuBuilder.setCheckForUpdatesMenuEnabled).toHaveBeenCalledWith(false);
+      expect(menuBuilder.setNoUpdateAvailableMenuVisibility).toHaveBeenCalledWith(false);
+    });
+
+    it('handles update-available', async () => {
+      await updater.start();
+
+      emit('update-available');
+
+      expect(menuBuilder.setUpdateAvailableMenuVisibility).toHaveBeenCalledWith(true);
+      expect(menubar.tray.setToolTip).toHaveBeenCalledWith(
+        expect.stringContaining('A new update is available'),
+      );
+    });
+
+    it('handles download-progress', async () => {
+      await updater.start();
+
+      emit('download-progress', { percent: 12.3456 });
+
+      expect(menubar.tray.setToolTip).toHaveBeenCalledWith(expect.stringContaining('12.35%'));
+    });
+
+    it('handles update-not-available', async () => {
+      await updater.start();
+
+      emit('update-not-available');
+
+      expect(menuBuilder.setCheckForUpdatesMenuEnabled).toHaveBeenCalledWith(true);
+      expect(menuBuilder.setNoUpdateAvailableMenuVisibility).toHaveBeenCalledWith(true);
+      expect(menuBuilder.setUpdateAvailableMenuVisibility).toHaveBeenCalledWith(false);
+      expect(menuBuilder.setUpdateReadyForInstallMenuVisibility).toHaveBeenCalledWith(false);
+    });
+
+    it('auto-hides "No updates available" after configured timeout', async () => {
+      vi.useFakeTimers();
+      try {
+        await updater.start();
+
+        emit('update-not-available');
+
+        // Immediately shows the message
+        expect(menuBuilder.setNoUpdateAvailableMenuVisibility).toHaveBeenCalledWith(true);
+
+        // Then hides it after the configured timeout
+        vi.advanceTimersByTime(APPLICATION.UPDATE_NOT_AVAILABLE_DISPLAY_MS);
+        expect(menuBuilder.setNoUpdateAvailableMenuVisibility).toHaveBeenLastCalledWith(false);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('clears pending hide timer when a new check starts', async () => {
+      vi.useFakeTimers();
+      try {
+        await updater.start();
+
+        emit('update-not-available');
+
+        // Message shown
+        expect(menuBuilder.setNoUpdateAvailableMenuVisibility).toHaveBeenCalledWith(true);
+
+        // New check should hide immediately and clear pending timeout
+        emit('checking-for-update');
+
+        expect(menuBuilder.setNoUpdateAvailableMenuVisibility).toHaveBeenLastCalledWith(false);
+
+        const callsBefore = menuBuilder.setNoUpdateAvailableMenuVisibility.mock.calls.length;
+        vi.advanceTimersByTime(APPLICATION.UPDATE_NOT_AVAILABLE_DISPLAY_MS * 2);
+        // No additional hide call due to cleared timeout
+        expect(menuBuilder.setNoUpdateAvailableMenuVisibility.mock.calls.length).toBe(callsBefore);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('handles update-cancelled (reset state)', async () => {
+      await updater.start();
+
+      emit('update-cancelled');
+
+      expect(menubar.tray.setToolTip).toHaveBeenCalledWith(APPLICATION.NAME);
+      expect(menuBuilder.setCheckForUpdatesMenuEnabled).toHaveBeenCalledWith(true);
+    });
+
+    it('handles error (reset + logError)', async () => {
+      await updater.start();
+
+      const err = new Error('failure');
+      emit('error', err);
+
+      expect(logError).toHaveBeenCalledWith('auto updater', 'Error checking for update', err);
+      expect(menubar.tray.setToolTip).toHaveBeenCalledWith(APPLICATION.NAME);
+    });
+
+    it('keeps checking on schedule after an error', async () => {
+      vi.useFakeTimers();
+      try {
+        await updater.start();
+
+        // Let the first scheduled check run, which registers the interval
+        await vi.advanceTimersByTimeAsync(APPLICATION.UPDATE_CHECK_INTERVAL_MS);
+        const callsBeforeError = vi.mocked(autoUpdater.checkForUpdatesAndNotify).mock.calls.length;
+
+        emit('error', new Error('offline'));
+
+        await vi.advanceTimersByTimeAsync(APPLICATION.UPDATE_CHECK_INTERVAL_MS);
+
+        expect(vi.mocked(autoUpdater.checkForUpdatesAndNotify).mock.calls.length).toBeGreaterThan(
+          callsBeforeError,
+        );
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('performs initial check and schedules periodic checks', async () => {
+      const originalSetInterval = globalThis.setInterval;
+      const setIntervalSpy = vi.spyOn(globalThis, 'setInterval').mockImplementation(((
+        fn: () => void,
+      ) => {
+        fn();
+        return 0 as unknown as NodeJS.Timeout;
+      }) as unknown as typeof setInterval);
+      try {
+        await updater.start();
+
+        // At minimum the initial check should have occurred
+        const callCount = vi.mocked(autoUpdater.checkForUpdatesAndNotify).mock.calls.length;
+        expect(callCount).toBeGreaterThanOrEqual(1);
+
+        // If the periodic interval was scheduled during this test run, assert its arguments
+        if (setIntervalSpy.mock.calls.length) {
+          expect(setIntervalSpy).toHaveBeenCalledWith(
+            expect.any(Function),
+            APPLICATION.UPDATE_CHECK_INTERVAL_MS,
+          );
+        }
+      } finally {
+        setIntervalSpy.mockRestore();
+        globalThis.setInterval = originalSetInterval;
+      }
+    });
+  });
+});

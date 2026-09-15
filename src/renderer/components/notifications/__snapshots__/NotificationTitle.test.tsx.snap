@@ -1,0 +1,167 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`renderer/components/notifications/NotificationTitle.tsx > should apply truncate className when wrapNotificationTitle is false 1`] = `
+<div>
+  <span
+    class="truncate prc-Text-Text-9mHv3"
+    data-component="Text"
+  >
+    <span
+      class="prc-Text-Text-9mHv3"
+      data-component="Text"
+    >
+      refactor: migrate deprecated atlaskit 
+    </span>
+    <span
+      class="px-1 py-0.5 rounded bg-gitify-notification-hover font-mono text-xs prc-Text-Text-9mHv3"
+      data-component="Text"
+    >
+      xcss
+    </span>
+  </span>
+</div>
+`;
+
+exports[`renderer/components/notifications/NotificationTitle.tsx > should not apply truncate className when wrapNotificationTitle is true 1`] = `
+<div>
+  <span
+    class="prc-Text-Text-9mHv3"
+    data-component="Text"
+  >
+    <span
+      class="prc-Text-Text-9mHv3"
+      data-component="Text"
+    >
+      refactor: migrate deprecated atlaskit 
+    </span>
+    <span
+      class="px-1 py-0.5 rounded bg-gitify-notification-hover font-mono text-xs prc-Text-Text-9mHv3"
+      data-component="Text"
+    >
+      xcss
+    </span>
+  </span>
+</div>
+`;
+
+exports[`renderer/components/notifications/NotificationTitle.tsx > should render plain text without code blocks 1`] = `
+<div>
+  <span
+    class="truncate prc-Text-Text-9mHv3"
+    data-component="Text"
+  >
+    <span
+      class="prc-Text-Text-9mHv3"
+      data-component="Text"
+    >
+      Simple notification title
+    </span>
+  </span>
+</div>
+`;
+
+exports[`renderer/components/notifications/NotificationTitle.tsx > should render text with code block at the end 1`] = `
+<div>
+  <span
+    class="truncate prc-Text-Text-9mHv3"
+    data-component="Text"
+  >
+    <span
+      class="prc-Text-Text-9mHv3"
+      data-component="Text"
+    >
+      Fix issue with 
+    </span>
+    <span
+      class="px-1 py-0.5 rounded bg-gitify-notification-hover font-mono text-xs prc-Text-Text-9mHv3"
+      data-component="Text"
+    >
+      render
+    </span>
+  </span>
+</div>
+`;
+
+exports[`renderer/components/notifications/NotificationTitle.tsx > should render text with code block at the start 1`] = `
+<div>
+  <span
+    class="truncate prc-Text-Text-9mHv3"
+    data-component="Text"
+  >
+    <span
+      class="px-1 py-0.5 rounded bg-gitify-notification-hover font-mono text-xs prc-Text-Text-9mHv3"
+      data-component="Text"
+    >
+      useState
+    </span>
+    <span
+      class="prc-Text-Text-9mHv3"
+      data-component="Text"
+    >
+       hook implementation
+    </span>
+  </span>
+</div>
+`;
+
+exports[`renderer/components/notifications/NotificationTitle.tsx > should render text with multiple inline code blocks 1`] = `
+<div>
+  <span
+    class="truncate prc-Text-Text-9mHv3"
+    data-component="Text"
+  >
+    <span
+      class="prc-Text-Text-9mHv3"
+      data-component="Text"
+    >
+      Replace 
+    </span>
+    <span
+      class="px-1 py-0.5 rounded bg-gitify-notification-hover font-mono text-xs prc-Text-Text-9mHv3"
+      data-component="Text"
+    >
+      foo
+    </span>
+    <span
+      class="prc-Text-Text-9mHv3"
+      data-component="Text"
+    >
+       with 
+    </span>
+    <span
+      class="px-1 py-0.5 rounded bg-gitify-notification-hover font-mono text-xs prc-Text-Text-9mHv3"
+      data-component="Text"
+    >
+      bar
+    </span>
+    <span
+      class="prc-Text-Text-9mHv3"
+      data-component="Text"
+    >
+       in config
+    </span>
+  </span>
+</div>
+`;
+
+exports[`renderer/components/notifications/NotificationTitle.tsx > should render text with single inline code block 1`] = `
+<div>
+  <span
+    class="truncate prc-Text-Text-9mHv3"
+    data-component="Text"
+  >
+    <span
+      class="prc-Text-Text-9mHv3"
+      data-component="Text"
+    >
+      refactor: migrate deprecated atlaskit 
+    </span>
+    <span
+      class="px-1 py-0.5 rounded bg-gitify-notification-hover font-mono text-xs prc-Text-Text-9mHv3"
+      data-component="Text"
+    >
+      xcss
+    </span>
+  </span>
+</div>
+`;

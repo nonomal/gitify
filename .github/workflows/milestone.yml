@@ -1,0 +1,37 @@
+name: Add milestone on PR merge
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - closed
+
+permissions: {}
+
+jobs:
+  add-milestone:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Get open milestone
+        id: milestone
+        run: |
+          milestone=$(gh api repos/${{ github.repository }}/milestones \
+            --jq '.[] | select(.state=="open") | .title' | head -n 1)
+          echo "Found milestone: $milestone"
+          echo "milestone=$milestone" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Add milestone to PR
+        if: steps.milestone.outputs.milestone != ''
+        run: |
+          gh pr edit ${{ github.event.pull_request.number }} \
+            --repo ${{ github.repository }} \
+            --milestone "${STEPS_MILESTONE_OUTPUTS_MILESTONE}"
+        env:
+          STEPS_MILESTONE_OUTPUTS_MILESTONE: ${{ steps.milestone.outputs.milestone }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

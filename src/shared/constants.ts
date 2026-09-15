@@ -1,0 +1,21 @@
+export const APPLICATION = {
+  ID: 'com.electron.gitify',
+
+  NAME: 'Gitify',
+
+  EVENT_PREFIX: 'gitify:',
+
+  FIRST_RUN_FOLDER: 'gitify-first-run',
+
+  WEBSITE: 'https://gitify.io',
+
+  GITHUB_BASE_URL: 'https://github.com',
+
+  REPO_SLUG: 'gitify-app/gitify',
+
+  NOTIFICATION_SOUND: 'clearly.mp3',
+
+  UPDATE_CHECK_INTERVAL_MS: 24 * 60 * 60 * 1000, // 24 hours
+
+  UPDATE_NOT_AVAILABLE_DISPLAY_MS: 60 * 1000, // 60 seconds
+} as const;

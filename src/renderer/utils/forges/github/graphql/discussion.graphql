@@ -1,0 +1,69 @@
+#import './common.graphql'
+
+query FetchDiscussionByNumber(
+  $owner: String!
+  $name: String!
+  $number: Int!
+  $lastThreadedComments: Int
+  $lastReplies: Int
+  $firstLabels: Int
+) {
+  repository(owner: $owner, name: $name) {
+    discussion(number: $number) {
+      ...DiscussionDetails
+    }
+  }
+}
+
+fragment DiscussionDetails on Discussion {
+  __typename
+  number
+  title
+  stateReason
+  isAnswered @gated(requires: "answeredDiscussion")
+  url
+  author {
+    ...AuthorFields
+  }
+  comments(last: $lastThreadedComments) {
+    totalCount
+    nodes {
+      ...DiscussionCommentFields
+    }
+  }
+  labels(first: $firstLabels) {
+    nodes {
+      ...LabelFields
+    }
+  }
+  reactions {
+    totalCount
+  }
+  reactionGroups {
+    ...ReactionGroupFields
+  }
+}
+
+fragment CommentFields on DiscussionComment {
+  createdAt
+  author {
+    ...AuthorFields
+  }
+  url
+  reactions {
+    totalCount
+  }
+  reactionGroups {
+    ...ReactionGroupFields
+  }
+}
+
+fragment DiscussionCommentFields on DiscussionComment {
+  ...CommentFields
+  replies(last: $lastReplies) {
+    totalCount
+    nodes {
+      ...CommentFields
+    }
+  }
+}

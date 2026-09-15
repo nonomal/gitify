@@ -1,42 +1,31 @@
 {
   "name": "gitify",
-  "version": "5.9.0",
-  "description": "GitHub Notifications on your menu bar.",
-  "main": "src/electron/main.js",
-  "scripts": {
-    "build": "webpack --config webpack.prod.js",
-    "clean": "rimraf build coverage node_modules",
-    "watch": "webpack --config webpack.common.js --watch",
-    "make:linux": "electron-builder --linux",
-    "make:macos": "electron-builder --mac --universal",
-    "make:win": "electron-builder --win",
-    "lint:check": "biome check",
-    "lint": "biome check --fix",
-    "test": "jest",
-    "start": "electron . --enable-logging",
-    "prepare": "husky"
-  },
-  "engines": {
-    "node": ">=20"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/gitify-app/gitify.git"
-  },
+  "version": "7.8.0",
+  "private": true,
+  "description": "Git notifications on your menu bar.",
   "keywords": [
-    "gitify",
-    "github",
-    "notifier",
-    "notifications",
+    "bitbucket",
+    "codeberg",
     "electron",
-    "atom",
-    "shell",
-    "app",
+    "electron-menubar",
+    "forgejo",
+    "gitea",
+    "github",
+    "gitify",
+    "gitlab",
+    "menubar",
+    "notifications",
+    "taskbar",
     "tray"
   ],
+  "homepage": "https://gitify.io/",
+  "bugs": {
+    "url": "https://github.com/gitify-app/gitify/issues"
+  },
+  "license": "MIT",
   "author": {
-    "name": "Emmanouil Konstantinidis",
-    "email": "hello@manos.im"
+    "name": "Adam Setch",
+    "url": "https://github.com/setchy"
   },
   "contributors": [
     {
@@ -56,99 +45,102 @@
       "url": "https://github.com/afonsojramos"
     }
   ],
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/gitify-app/gitify/issues"
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gitify-app/gitify.git"
   },
-  "homepage": "https://www.gitify.io/",
-  "build": {
-    "appId": "com.electron.gitify",
-    "productName": "Gitify",
-    "files": ["build/**/*", "assets/**/*", "src/electron/*", "LICENSE"],
-    "mac": {
-      "category": "public.app-category.developer-tools",
-      "icon": "assets/images/app-icon.icns",
-      "identity": "Emmanouil Konstantinidis (3YP8SXP3BF)",
-      "hardenedRuntime": true,
-      "gatekeeperAssess": false,
-      "entitlements": "./entitlements/entitlements.mac.plist",
-      "entitlementsInherit": "./entitlements/entitlements.mac.plist",
-      "publish": ["github"],
-      "extendInfo": {
-        "NSBluetoothAlwaysUsageDescription": null,
-        "NSBluetoothPeripheralUsageDescription": null,
-        "NSCameraUsageDescription": null,
-        "NSMicrophoneUsageDescription": null
-      }
-    },
-    "dmg": {
-      "icon": "assets/images/app-icon.icns",
-      "sign": false
-    },
-    "win": {
-      "target": "nsis",
-      "icon": "assets/images/app-icon.ico"
-    },
-    "nsis": {
-      "oneClick": false
-    },
-    "linux": {
-      "target": ["AppImage", "deb", "rpm", "snap"],
-      "category": "Development",
-      "maintainer": "Emmanouil Konstantinidis"
-    },
-    "afterSign": "scripts/notarize.js"
+  "main": "build/main.js",
+  "scripts": {
+    "clean": "rimraf build coverage dist node_modules",
+    "prepare": "husky",
+    "build": "vp build",
+    "codegen": "graphql-codegen --config codegen.ts",
+    "codegen:watch": "pnpm codegen --watch",
+    "dev": "concurrently --names \"vite,codegen\" --prefix-colors \"blue,magenta\" \"vp dev\" \"pnpm codegen:watch\"",
+    "devtools": "concurrently --names \"dev,devtools\" --prefix-colors \"cyan,green\" \"pnpm dev\" \"react-devtools\"",
+    "start": "pnpm build && pnpm dev",
+    "package:linux": "electron-builder --linux",
+    "package:macos": "electron-builder --mac",
+    "package:win": "electron-builder --win",
+    "check": "vp check",
+    "check:fix": "vp check --fix",
+    "lint": "vp lint --fix",
+    "lint:check": "vp lint",
+    "format": "vp fmt",
+    "format:check": "vp fmt --check",
+    "test": "vp test --coverage --run --project 'happy-dom [preload, renderer]' --project 'node [main, shared]'",
+    "test:watch": "vp test --watch --coverage",
+    "test:ui": "vp test --ui",
+    "test:visual": "scripts/visual.sh",
+    "test:visual:update": "scripts/visual.sh --update"
   },
   "dependencies": {
-    "@electron/remote": "2.1.2",
-    "@primer/octicons-react": "19.10.0",
-    "axios": "1.7.2",
-    "class-variance-authority": "0.7.0",
-    "clsx": "2.1.1",
-    "date-fns": "3.6.0",
-    "electron-updater": "6.2.1",
-    "final-form": "4.20.10",
-    "menubar": "9.5.0",
-    "nprogress": "0.2.0",
-    "react": "18.3.1",
-    "react-dom": "18.3.1",
-    "react-final-form": "6.5.9",
-    "react-router-dom": "6.24.1",
-    "tailwind-merge": "2.3.0",
-    "ts-loader": "9.5.1",
-    "typescript": "5.5.3"
+    "cn": "0.3.0",
+    "electron-log": "5.4.4",
+    "electron-menubar": "11.0.0",
+    "electron-updater": "6.8.9",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-router-dom": "7.18.3"
   },
   "devDependencies": {
-    "@biomejs/biome": "1.8.3",
-    "@electron/notarize": "2.3.2",
-    "@testing-library/react": "16.0.0",
-    "@types/jest": "29.5.12",
-    "@types/node": "20.14.10",
-    "@types/nprogress": "0.2.3",
-    "@types/react": "18.3.3",
+    "@discordapp/twemoji": "16.0.1",
+    "@electron/notarize": "3.1.1",
+    "@graphql-codegen/cli": "7.4.1",
+    "@graphql-codegen/schema-ast": "6.1.0",
+    "@graphql-codegen/typescript-operations": "6.1.6",
+    "@graphql-typed-document-node/core": "3.2.0",
+    "@octokit/core": "7.0.8",
+    "@octokit/graphql": "9.0.5",
+    "@octokit/oauth-methods": "6.0.5",
+    "@octokit/openapi-types": "29.0.1",
+    "@octokit/plugin-paginate-rest": "15.0.0",
+    "@octokit/plugin-rest-endpoint-methods": "18.0.0",
+    "@octokit/request": "10.0.16",
+    "@octokit/request-error": "7.1.2",
+    "@octokit/types": "18.0.0",
+    "@parcel/watcher": "2.6.0",
+    "@primer/css": "22.3.1",
+    "@primer/octicons-react": "19.35.0",
+    "@primer/primitives": "11.10.0",
+    "@primer/react": "38.39.0",
+    "@tailwindcss/vite": "4.3.3",
+    "@tanstack/react-query": "5.102.8",
+    "@testing-library/jest-dom": "7.0.1",
+    "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "14.6.7",
+    "@types/node": "24.13.4",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
     "@types/react-router-dom": "5.3.3",
-    "autoprefixer": "10.4.19",
-    "css-loader": "7.1.2",
-    "electron": "31.1.0",
-    "electron-builder": "24.13.3",
-    "graphql-tag": "2.12.6",
-    "husky": "9.0.11",
-    "jest": "29.7.0",
-    "jest-environment-jsdom": "29.7.0",
-    "nock": "13.5.4",
-    "postcss": "8.4.39",
-    "postcss-loader": "8.1.1",
-    "rimraf": "5.0.8",
-    "style-loader": "4.0.0",
-    "tailwindcss": "3.4.4",
-    "ts-jest": "29.1.5",
-    "ts-node": "10.9.2",
-    "webpack": "5.92.1",
-    "webpack-cli": "5.1.4",
-    "webpack-merge": "6.0.1"
+    "@types/semver": "7.8.0",
+    "@vitejs/plugin-react": "6.1.1",
+    "@vitest/browser-playwright": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "concurrently": "10.0.5",
+    "date-fns": "4.4.0",
+    "dotenv": "17.4.2",
+    "electron": "catalog:",
+    "electron-builder": "26.15.3",
+    "final-form": "5.0.1",
+    "graphql": "17.0.2",
+    "happy-dom": "20.14.5",
+    "husky": "9.1.7",
+    "playwright": "1.63.0",
+    "react-devtools": "8.0.0",
+    "rimraf": "6.1.3",
+    "semver": "7.8.5",
+    "tailwindcss": "4.3.3",
+    "typescript": "7.0.2",
+    "vite": "catalog:",
+    "vite-plugin-checker": "0.14.5",
+    "vite-plugin-electron": "1.1.2",
+    "vite-plus": "catalog:",
+    "vitest": "catalog:",
+    "zustand": "5.0.15"
   },
-  "packageManager": "pnpm@9.4.0",
-  "lint-staged": {
-    "*.{js,json,ts,tsx}": "biome format --fix"
-  }
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "pnpm@12.4.1"
 }

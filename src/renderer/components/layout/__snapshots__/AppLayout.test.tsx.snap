@@ -1,0 +1,239 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`renderer/components/layout/AppLayout.tsx > should render itself & its children 1`] = `
+<div>
+  <div
+    class="flex flex-col min-h-screen bg-gitify-background"
+  >
+    <button
+      aria-label="initial focus"
+      class="sr-only focus-visible"
+      data-focus-visible-added=""
+      data-testid="initial-focus-sentinel"
+      type="button"
+    />
+    <div
+      class="gitify-sidebar fixed w-sidebar h-full bg-gitify-sidebar [&_svg]:text-white prc-Stack-Stack-UQ9k6"
+      data-align="stretch"
+      data-component="Stack"
+      data-direction="vertical"
+      data-justify="space-between"
+      data-padding="none"
+      data-wrap="nowrap"
+    >
+      <div
+        class="prc-Stack-Stack-UQ9k6"
+        data-align="center"
+        data-component="Stack"
+        data-direction="vertical"
+        data-gap="condensed"
+        data-justify="start"
+        data-padding="normal"
+        data-wrap="nowrap"
+      >
+        <button
+          aria-describedby="_r_0_"
+          aria-label="Gitify"
+          class="prc-Button-ButtonBase-9n-Xk prc-Button-IconButton-fyge7"
+          data-component="IconButton"
+          data-loading="false"
+          data-no-visuals="true"
+          data-size="small"
+          data-testid="sidebar-home"
+          data-variant="invisible"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            aria-label="Gitify Logo"
+            class="size-5"
+            viewBox="0 0 500 500"
+            xmlns="https://www.w3.org/2000/svg"
+            xmlns:xlink="https://www.w3.org/1999/xlink"
+          >
+            <defs>
+              <lineargradient
+                id="linearGradient-light"
+                x1="90.8779989%"
+                x2="-1.30249747%"
+                y1="80.0676288%"
+                y2="32.7108237%"
+              >
+                <stop
+                  offset="0%"
+                  stop-color="#CCCCCC"
+                />
+                <stop
+                  offset="100%"
+                  stop-color="#FFFFFF"
+                />
+              </lineargradient>
+            </defs>
+            <g
+              fill="none"
+              fill-rule="evenodd"
+              stroke="none"
+              stroke-width="1"
+            >
+              <g
+                fill="url(#linearGradient-light)"
+                fill-rule="nonzero"
+                id="Logo"
+                transform="translate(6.000000, 6.000000)"
+              >
+                <path
+                  d="M330.391053,10.2526316 C361.413773,10.2526316 386.562656,35.4015165 386.562656,66.4242368 C386.562656,97.4469571 361.413773,122.595841 330.391053,122.595842 L330.365421,122.570211 L247.319105,122.570211 C180.042515,122.499128 125.399186,176.890222 125.159,244.166421 L125.133789,244.219632 L125.154247,245.84774 C126.219609,301.255958 164.473457,349.116728 218.453292,362.268048 C272.940509,375.542983 329.466993,350.045988 355.583747,300.428701 L272.258632,300.427737 C257.346614,300.427737 243.046846,294.496977 232.512078,283.942976 C221.97731,273.388975 216.072618,259.078414 216.099748,244.166421 C216.099748,213.150778 241.242989,188.007632 272.258632,188.007632 L371.119632,188.007632 C379.28704,188.480415 386.935401,192.166372 392.393842,198.260263 L474.869789,300.324632 L474.978789,300.325211 L474.952789,300.426632 L474.953158,300.427737 L474.951789,300.427632 L474.173714,303.448935 C446.939817,406.220475 353.906452,478.028529 247.319105,478.080211 C118.007789,478.080211 12.8157895,373.144526 12.8157895,244.166421 C12.8157895,115.188316 117.905263,10.2526316 247.319105,10.2526316 L330.391053,10.2526316 Z"
+                />
+              </g>
+            </g>
+          </svg>
+        </button>
+        <span
+          aria-hidden="true"
+          class="prc-TooltipV2-Tooltip-tLeuB"
+          data-component="Tooltip"
+          data-direction="e"
+          popover="auto"
+          role="tooltip"
+        >
+          <span
+            id="_r_0_"
+          >
+            Home
+            <span
+              class="prc-src-InternalVisuallyHidden-2YaI6"
+            >
+              (
+              h
+              )
+            </span>
+          </span>
+          <span
+            aria-hidden="true"
+            class="prc-TooltipV2-KeybindingHintContainer-Ymj-3 prc-TooltipV2-HasTextBefore-fdOXj"
+            data-component="Tooltip.KeybindingHintContainer"
+          >
+            <kbd
+              class="prc-KeybindingHint-KeybindingHint-qpYIs prc-Text-Text-9mHv3"
+              data-component="KeybindingHint"
+              data-testid="keybinding-hint"
+            >
+              <span
+                class="prc-components-Chord-DdhWN prc-components-ChordOnEmphasis-O-4BS prc-components-ChordSmall-c-P-x prc-Text-Text-9mHv3"
+                data-component="Text"
+                data-kbd-chord="true"
+              >
+                 
+                <span
+                  class="prc-src-InternalVisuallyHidden-2YaI6"
+                >
+                  h
+                </span>
+                <span
+                  aria-hidden="true"
+                >
+                  H
+                </span>
+              </span>
+            </kbd>
+          </span>
+        </span>
+      </div>
+      <div
+        class="prc-Stack-Stack-UQ9k6"
+        data-align="center"
+        data-component="Stack"
+        data-direction="vertical"
+        data-gap="condensed"
+        data-justify="start"
+        data-padding="normal"
+        data-wrap="nowrap"
+      >
+        <button
+          aria-labelledby="_r_2_"
+          class="prc-Button-ButtonBase-9n-Xk prc-Button-IconButton-fyge7"
+          data-component="IconButton"
+          data-loading="false"
+          data-no-visuals="true"
+          data-size="small"
+          data-testid="sidebar-quit"
+          data-variant="invisible"
+          type="button"
+        >
+          <svg
+            aria-hidden="true"
+            class="octicon octicon-x-circle"
+            data-component="Octicon"
+            display="inline-block"
+            fill="currentColor"
+            focusable="false"
+            height="16"
+            overflow="visible"
+            style="vertical-align: text-bottom;"
+            viewBox="0 0 16 16"
+            width="16"
+          >
+            <path
+              d="M2.344 2.343h-.001a8 8 0 0 1 11.314 11.314A8.002 8.002 0 0 1 .234 10.089a8 8 0 0 1 2.11-7.746Zm1.06 10.253a6.5 6.5 0 1 0 9.108-9.275 6.5 6.5 0 0 0-9.108 9.275ZM6.03 4.97 8 6.94l1.97-1.97a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l1.97 1.97a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-1.97 1.97a.749.749 0 0 1-1.275-.326.749.749 0 0 1 .215-.734L6.94 8 4.97 6.03a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018Z"
+            />
+          </svg>
+        </button>
+        <span
+          aria-hidden="true"
+          class="prc-TooltipV2-Tooltip-tLeuB"
+          data-component="Tooltip"
+          data-direction="e"
+          popover="auto"
+        >
+          <span
+            id="_r_2_"
+          >
+            Quit Gitify
+            <span
+              class="prc-src-InternalVisuallyHidden-2YaI6"
+            >
+              (
+              q
+              )
+            </span>
+          </span>
+          <span
+            aria-hidden="true"
+            class="prc-TooltipV2-KeybindingHintContainer-Ymj-3 prc-TooltipV2-HasTextBefore-fdOXj"
+            data-component="Tooltip.KeybindingHintContainer"
+          >
+            <kbd
+              class="prc-KeybindingHint-KeybindingHint-qpYIs prc-Text-Text-9mHv3"
+              data-component="KeybindingHint"
+              data-testid="keybinding-hint"
+            >
+              <span
+                class="prc-components-Chord-DdhWN prc-components-ChordOnEmphasis-O-4BS prc-components-ChordSmall-c-P-x prc-Text-Text-9mHv3"
+                data-component="Text"
+                data-kbd-chord="true"
+              >
+                 
+                <span
+                  class="prc-src-InternalVisuallyHidden-2YaI6"
+                >
+                  q
+                </span>
+                <span
+                  aria-hidden="true"
+                >
+                  Q
+                </span>
+              </span>
+            </kbd>
+          </span>
+        </span>
+      </div>
+    </div>
+    <div
+      class="flex-1 pl-sidebar"
+    >
+      Test
+    </div>
+  </div>
+</div>
+`;

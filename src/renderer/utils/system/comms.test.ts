@@ -1,0 +1,175 @@
+import { useSettingsStore } from '../../stores';
+
+import { type Link, OpenPreference } from '../../types';
+
+import {
+  applyKeyboardShortcut,
+  copyToClipboard,
+  decryptValue,
+  encryptValue,
+  getAppVersion,
+  hideWindow,
+  openExternalLink,
+  quitApp,
+  setAutoLaunch,
+  setKeepWindowOnBlur,
+  setShowUpdateNotifications,
+  setUseAlternateIdleIcon,
+  setUseX11Backend,
+  showWindow,
+  updateTrayColor,
+  updateTrayTitle,
+} from './comms';
+
+describe('renderer/utils/comms.ts', () => {
+  describe('openExternalLink', () => {
+    it('should open an external link', () => {
+      useSettingsStore.setState({ openLinks: OpenPreference.BACKGROUND });
+
+      openExternalLink('https://gitify.io/' as Link);
+
+      expect(window.gitify.openExternalLink).toHaveBeenCalledTimes(1);
+      expect(window.gitify.openExternalLink).toHaveBeenCalledWith('https://gitify.io/', false);
+    });
+
+    it('should open in foreground when preference set to FOREGROUND', () => {
+      useSettingsStore.setState({ openLinks: OpenPreference.FOREGROUND });
+
+      openExternalLink('https://gitify.io/' as Link);
+
+      expect(window.gitify.openExternalLink).toHaveBeenCalledWith('https://gitify.io/', true);
+    });
+
+    it('should use default open preference if user settings not found', () => {
+      openExternalLink('https://gitify.io/' as Link);
+
+      expect(window.gitify.openExternalLink).toHaveBeenCalledTimes(1);
+      expect(window.gitify.openExternalLink).toHaveBeenCalledWith('https://gitify.io/', true);
+    });
+
+    it('should ignore opening external local links file:///', () => {
+      openExternalLink('file:///Applications/SomeApp.app' as Link);
+
+      expect(window.gitify.openExternalLink).not.toHaveBeenCalled();
+    });
+
+    it('should ignore non-https links (http)', () => {
+      openExternalLink('http://example.com' as Link);
+      expect(window.gitify.openExternalLink).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('app/version & crypto helpers', () => {
+    it('gets app version', async () => {
+      const version = await getAppVersion();
+      expect(window.gitify.app.version).toHaveBeenCalledTimes(1);
+      expect(version).toBe('v0.0.1');
+    });
+
+    it('encrypts value', async () => {
+      const value = await encryptValue('plain');
+
+      expect(window.gitify.encryptValue).toHaveBeenCalledTimes(1);
+      expect(window.gitify.encryptValue).toHaveBeenCalledWith('plain');
+      expect(value).toBe('encrypted');
+    });
+
+    it('decrypts value', async () => {
+      const value = await decryptValue('encrypted');
+
+      expect(window.gitify.decryptValue).toHaveBeenCalledTimes(1);
+      expect(window.gitify.decryptValue).toHaveBeenCalledWith('encrypted');
+      expect(value).toEqual({ token: 'decrypted' });
+    });
+  });
+
+  describe('window / app actions', () => {
+    it('quits app', () => {
+      quitApp();
+      expect(window.gitify.app.quit).toHaveBeenCalledTimes(1);
+    });
+
+    it('shows window', () => {
+      showWindow();
+      expect(window.gitify.app.show).toHaveBeenCalledTimes(1);
+    });
+
+    it('hides window', () => {
+      hideWindow();
+      expect(window.gitify.app.hide).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('settings toggles', () => {
+    it('sets auto launch', () => {
+      setAutoLaunch(true);
+
+      expect(window.gitify.setAutoLaunch).toHaveBeenCalledTimes(1);
+      expect(window.gitify.setAutoLaunch).toHaveBeenCalledWith(true);
+    });
+
+    it('sets alternate idle icon', () => {
+      setUseAlternateIdleIcon(false);
+
+      expect(window.gitify.tray.useAlternateIdleIcon).toHaveBeenCalledTimes(1);
+      expect(window.gitify.tray.useAlternateIdleIcon).toHaveBeenCalledWith(false);
+    });
+
+    it('sets keep window on blur', () => {
+      setKeepWindowOnBlur(true);
+
+      expect(window.gitify.setKeepWindowOnBlur).toHaveBeenCalledTimes(1);
+      expect(window.gitify.setKeepWindowOnBlur).toHaveBeenCalledWith(true);
+    });
+
+    it('sets whether update notifications are shown', () => {
+      setShowUpdateNotifications(false);
+
+      expect(window.gitify.setShowUpdateNotifications).toHaveBeenCalledTimes(1);
+      expect(window.gitify.setShowUpdateNotifications).toHaveBeenCalledWith(false);
+    });
+
+    it('sets the X11 backend preference', () => {
+      setUseX11Backend(true);
+
+      expect(window.gitify.setUseX11Backend).toHaveBeenCalledTimes(1);
+      expect(window.gitify.setUseX11Backend).toHaveBeenCalledWith(true);
+    });
+
+    it('applies keyboard shortcut', async () => {
+      await applyKeyboardShortcut({
+        enabled: true,
+        accelerator: 'CommandOrControl+Shift+G',
+      });
+
+      expect(window.gitify.applyKeyboardShortcut).toHaveBeenCalledTimes(1);
+      expect(window.gitify.applyKeyboardShortcut).toHaveBeenCalledWith({
+        enabled: true,
+        keyboardShortcut: 'CommandOrControl+Shift+G',
+      });
+    });
+  });
+
+  describe('tray helpers', () => {
+    it('updates tray icon color with count', () => {
+      updateTrayColor(5, true);
+
+      expect(window.gitify.tray.updateColor).toHaveBeenCalledTimes(1);
+      expect(window.gitify.tray.updateColor).toHaveBeenCalledWith(5, true);
+    });
+
+    it('updates tray title with provided value', () => {
+      updateTrayTitle('gitify');
+
+      expect(window.gitify.tray.updateTitle).toHaveBeenCalledTimes(1);
+      expect(window.gitify.tray.updateTitle).toHaveBeenCalledWith('gitify');
+    });
+  });
+
+  it('copy to clipboard', async () => {
+    copyToClipboard('some-value');
+
+    expect(navigator.clipboard.writeText).toHaveBeenCalledTimes(1);
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('some-value');
+  });
+});
